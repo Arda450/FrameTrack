@@ -1,4 +1,4 @@
-// VEREINFACHT – TrackingState-Muster wie in rustime-tracking
+// VEREINFACHT – TrackingState-Muster wie in frametrack-tracking
 // Nicht als eigenes Crate gebaut.
 
 use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};

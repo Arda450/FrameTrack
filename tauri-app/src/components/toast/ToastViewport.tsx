@@ -1,5 +1,5 @@
 import { CheckCircle2, CircleAlert, X } from "lucide-react";
-import { AppIcon } from "../Icon";
+import { AppIcon } from "../shared/AppIcon";
 import type { ToastItem } from "./ToastContext";
 
 type Props = {

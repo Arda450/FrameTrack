@@ -7,21 +7,23 @@ use chrono::{Local, TimeZone};
 use tauri::State;
 
 use crate::dto::activity::ActivityDto;
+use crate::dto::project::ProjectStatsDto;
 use crate::dto::stats::{
     ActivitiesPageDto, CategoryTimeSeriesPointDto, CategoryValueDto, DwellSegmentDto,
     OverviewStatsDto,
 };
 use crate::error::ApiError;
-use rustime_db::{
+use frametrack_db::{
     count_projects, dwell_by_category_in_range, dwell_time_series_by_category,
     dwell_time_series_by_project, get_activities_filtered,
     get_activities_page as db_get_activities_page, get_activity_overview_summary,
-    get_project_activity_totals, ActivitiesFilter, DwellOptions, TimeSeriesOptions,
+    get_project_activity_totals, get_project_stats_summary, ActivitiesFilter, DwellOptions,
+    TimeSeriesOptions,
 };
-use rustime_tracking::TrackingState;
+use frametrack_tracking::TrackingState;
 
 /// Mappt eine DB-Zeile auf das transportfähige `ActivityDto` für die UI.
-fn row_to_dto(row: rustime_db::ActivityWithProject) -> ActivityDto {
+fn row_to_dto(row: frametrack_db::ActivityWithProject) -> ActivityDto {
     ActivityDto::from_parts(row.title, row.timestamp, row.project_id, row.project_name)
 }
 
@@ -34,7 +36,7 @@ pub fn get_overview_stats(state: State<TrackingState>) -> Result<OverviewStatsDt
     const RANGE_SECONDS: u64 = 24 * 60 * 60;
     const BUCKET_SECONDS: u64 = 15 * 60;
 
-    let to_ts = rustime_tracking::current_timestamp();
+    let to_ts = frametrack_tracking::current_timestamp();
     let from_ts = to_ts.saturating_sub(RANGE_SECONDS);
     let today_start_ts = Local::now()
         .date_naive()
@@ -112,6 +114,47 @@ pub fn get_overview_stats(state: State<TrackingState>) -> Result<OverviewStatsDt
         first_activity_ts: summary.first_activity_ts,
         by_project,
         timeline,
+    })
+}
+
+/// Liefert Kennzahlen zum aktiven Projekt für die Zeitstatistik-Seitenleiste.
+#[tauri::command]
+pub fn get_project_stats(
+    state: State<TrackingState>,
+    project_id: i64,
+) -> Result<ProjectStatsDto, ApiError> {
+    const RECENT_SECONDS: u64 = 24 * 60 * 60;
+
+    let to_ts = frametrack_tracking::current_timestamp();
+    let recent_from_ts = to_ts.saturating_sub(RECENT_SECONDS);
+    let today_start_ts = Local::now()
+        .date_naive()
+        .and_hms_opt(0, 0, 0)
+        .and_then(|value| Local.from_local_datetime(&value).single())
+        .map(|value| value.timestamp().max(0) as u64)
+        .unwrap_or(recent_from_ts);
+
+    let db_conn = state
+        .db
+        .lock()
+        .map_err(|_| ApiError::new("DB_LOCK_FAILED", "Datenbank-Lock fehlgeschlagen"))?;
+
+    let summary =
+        get_project_stats_summary(&db_conn, project_id, today_start_ts, recent_from_ts, to_ts)
+            .map_err(ApiError::from)?
+            .ok_or_else(|| ApiError::new("PROJECT_NOT_FOUND", "Projekt nicht gefunden"))?;
+
+    Ok(ProjectStatsDto {
+        project_id: summary.project_id,
+        name: summary.name,
+        created_at: summary.created_at,
+        activity_count: summary.activity_count,
+        total_active_seconds: summary.total_active_seconds,
+        today_active_seconds: summary.today_active_seconds,
+        recent_active_seconds: summary.recent_active_seconds,
+        active_days: summary.active_days,
+        first_activity_ts: summary.first_activity_ts,
+        last_activity_ts: summary.last_activity_ts,
     })
 }
 

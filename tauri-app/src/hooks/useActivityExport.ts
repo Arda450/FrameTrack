@@ -1,6 +1,6 @@
-import { invoke } from "@tauri-apps/api/core";
+import { exportActivitiesCsvToPaths } from "../api/export";
 import { useState } from "react";
-import type { ExportCsvResult, TableExportFilter } from "../types";
+import type { TableExportFilter } from "../types";
 import { useToast } from "../components/toast/ToastContext";
 import { apiErrorMessage } from "../utils/apiError";
 import {
@@ -8,6 +8,7 @@ import {
   defaultExportFileName,
   pickExportSavePath,
 } from "../utils/exportSaveDialog";
+import { formatExportSuccessDetail } from "../utils/exportPath";
 import { fileNameFromPath } from "../utils/fileNameFromPath";
 
 export function useActivityExport(filter: TableExportFilter) {
@@ -18,7 +19,7 @@ export function useActivityExport(filter: TableExportFilter) {
     try {
       const samplesPath = await pickExportSavePath({
         title: "CSV Zeiteinträge speichern",
-        defaultFileName: defaultExportFileName("rustime-samples", "csv"),
+        defaultFileName: defaultExportFileName("frametrack-samples", "csv"),
         extension: "csv",
         filterName: "CSV",
       });
@@ -26,19 +27,18 @@ export function useActivityExport(filter: TableExportFilter) {
 
       setActiveExport("csv-download");
       const aggregatedPath = aggregatedCsvPathBeside(samplesPath);
-      const result = await invoke<ExportCsvResult>(
-        "export_activities_csv_to_paths",
-        {
-          projectId: filter.projectId,
-          fromTs: filter.fromTs,
-          toTs: filter.toTs,
-          contextQuery: filter.contextQuery,
-          samplesPath,
-          aggregatedPath,
-        },
-      );
+      const result = await exportActivitiesCsvToPaths({
+        projectId: filter.projectId,
+        fromTs: filter.fromTs,
+        toTs: filter.toTs,
+        contextQuery: filter.contextQuery,
+        samplesPath,
+        aggregatedPath,
+      });
       toast.success("CSV exportiert", {
-        detail: `${fileNameFromPath(result.samples_path)} · ${fileNameFromPath(result.aggregated_path)}`,
+        detail: formatExportSuccessDetail(result.samples_path, [
+          fileNameFromPath(result.aggregated_path),
+        ]),
       });
     } catch (error) {
       toast.error(

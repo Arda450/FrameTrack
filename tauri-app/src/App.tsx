@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import styles from "./components/AppShell.module.css";
-import OverviewPanel from "./components/OverviewPanel";
-import { AppOverviewDialog } from "./components/AppOverviewDialog";
-import { SettingsDialog } from "./components/SettingsDialog";
-import { AppSidebar } from "./components/AppSidebar";
-import { Activity, Project } from "./types";
+import {
+  getActiveProject,
+  getTrackingStatus,
+  startTracking,
+  stopTracking,
+} from "./api/tracking";
+import { AppSidebar } from "./components/layout/AppSidebar";
+import { AppOverviewDialog } from "./components/dialogs/AppOverviewDialog";
+import { SettingsDialog } from "./components/dialogs/SettingsDialog";
+import OverviewPanel from "./components/panels/OverviewPanel";
 import { ToastProvider } from "./components/toast/ToastContext";
+import { Activity, Project } from "./types";
 import { apiErrorMessage } from "./utils/apiError";
 import "./App.css";
 
@@ -39,7 +43,7 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    invoke<boolean>("is_tracking")
+    getTrackingStatus()
       .then((running) => {
         setIsTracking(running);
         setStatusError(null);
@@ -51,7 +55,7 @@ export default function App() {
         );
       });
 
-    invoke<Project | null>("get_active_project")
+    getActiveProject()
       .then((project) => setActiveProject(project))
       .catch((e) => {
         console.error("get_active_project failed", e);
@@ -83,6 +87,13 @@ export default function App() {
     refresh("activities", "statistics", "projects");
   }
 
+  function handleProjectRenamed(project: Project) {
+    if (activeProject?.id === project.id) {
+      setActiveProject(project);
+    }
+    refresh("projects", "statistics");
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -110,7 +121,7 @@ export default function App() {
 
   async function handleStartTracking() {
     try {
-      await invoke("start_tracking");
+      await startTracking();
       setIsTracking(true);
       setStatusError(null);
     } catch (e) {
@@ -123,7 +134,7 @@ export default function App() {
 
   async function handleStopTracking() {
     try {
-      await invoke("stop_tracking");
+      await stopTracking();
       setIsTracking(false);
       setStatusError(null);
     } catch (e) {
@@ -141,7 +152,7 @@ export default function App() {
 
   return (
     <ToastProvider>
-      <main className={styles.Page}>
+      <main className="appShell">
         <AppSidebar
           theme={theme}
           overviewOpen={overviewOpen}
@@ -153,11 +164,12 @@ export default function App() {
           onSettingsOpenChange={setSettingsOpen}
           onProjectSelected={handleProjectSelected}
           onProjectDeleted={handleProjectDeleted}
+          onProjectRenamed={handleProjectRenamed}
           onStartTracking={handleStartTracking}
           onStopTracking={handleStopTracking}
         />
 
-        <section className={styles.Main}>
+        <section className="appShellMain">
           <OverviewPanel
             isTracking={isTracking}
             statusError={statusError}

@@ -1,5 +1,8 @@
-/** Gemeinsame Farbpalette für Pie- und Zeitverlaufs-Charts (Reihenfolge = Legende). */
-export const CHART_COLORS = [
+/** Anzahl der Theme-Farben (--chart-0 … in variables.css). */
+export const CHART_COLOR_COUNT = 12;
+
+/** Fallback, falls CSS-Variablen noch nicht verfügbar sind (z. B. Tests). */
+const CHART_COLORS_FALLBACK = [
   "#4A9EFF",
   "#00C49F",
   "#FFBB28",
@@ -12,14 +15,22 @@ export const CHART_COLORS = [
   "#E879F9",
   "#FACC15",
   "#2DD4BF",
-  "#F87171",
-  "#818CF8",
-  "#4ADE80",
-  "#FBBF24",
-];
+] as const;
 
+function readChartCssColor(index: number): string | null {
+  if (typeof document === "undefined") return null;
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue(`--chart-${index % CHART_COLOR_COUNT}`)
+    .trim();
+  return raw || null;
+}
+
+/** Farbe für Index – identisch zur Sidebar-Projektreihenfolge. */
 export function colorForCategoryIndex(index: number): string {
-  return CHART_COLORS[index % CHART_COLORS.length];
+  return (
+    readChartCssColor(index) ??
+    CHART_COLORS_FALLBACK[index % CHART_COLORS_FALLBACK.length]
+  );
 }
 
 export function colorForCategory(
@@ -28,6 +39,30 @@ export function colorForCategory(
 ): string {
   const idx = orderedNames.indexOf(name);
   return colorForCategoryIndex(idx >= 0 ? idx : orderedNames.length);
+}
+
+/** Feste Projektfarben nach Sidebar-Reihenfolge (Name → Farbe). */
+export function buildProjectColorMap(
+  projects: readonly { name: string }[],
+): Map<string, string> {
+  const map = new Map<string, string>();
+  projects.forEach((project, index) => {
+    map.set(project.name, colorForCategoryIndex(index));
+  });
+  return map;
+}
+
+export function resolveBarColor(
+  name: string,
+  options: {
+    colorByName?: ReadonlyMap<string, string>;
+    orderedNamesForColor?: readonly string[];
+  },
+): string {
+  const fromProject = options.colorByName?.get(name);
+  if (fromProject) return fromProject;
+  const order = options.orderedNamesForColor ?? [];
+  return colorForCategory(name, order);
 }
 
 /** Recharts-Tooltip: kompakt, gut lesbar; hoher z-index für Portal-Rendering.
@@ -62,3 +97,6 @@ export const chartTooltipStyle = {
     marginBottom: "3px",
   },
 } as const;
+
+// Legacy-Export für bestehende Imports
+export const CHART_COLORS = CHART_COLORS_FALLBACK;

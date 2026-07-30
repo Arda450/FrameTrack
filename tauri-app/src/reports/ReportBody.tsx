@@ -1,4 +1,9 @@
-import { invoke } from "@tauri-apps/api/core";
+import {
+  exportActivitiesCsvToPaths,
+  exportActivitiesJsonToPath,
+  exportReportPdfToPath,
+} from "../api/export";
+import { getByProjectForRange } from "../api/stats";
 import {
   memo,
   useCallback,
@@ -8,7 +13,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { ExportCsvResult, ReportCore } from "../types";
+import type { ReportCore, WeeklyReport } from "../types";
+import {
+  formatIsoDateLong,
+} from "../utils/dateRange";
 import {
   buildChartLegendEntries,
   mergeCategoryOrder,
@@ -18,14 +26,19 @@ import type { PieSegment } from "../components/charts/PieChart";
 import TimeSeriesChart from "../components/charts/TimeSeriesChart";
 import ChartLegend from "../components/charts/ChartLegend";
 import { useToast } from "../components/toast/ToastContext";
+import { formatExportSuccessDetail } from "../utils/exportPath";
 import { fileNameFromPath } from "../utils/fileNameFromPath";
 import {
   aggregatedCsvPathBeside,
   defaultExportFileName,
   pickExportSavePath,
 } from "../utils/exportSaveDialog";
-import { REPORT_ESTIMATION_HINT } from "./reportConfig";
-import { buildReportPdf } from "./exportReportPdf";
+import { REPORT_DWELL_OPTS, REPORT_ESTIMATION_HINT } from "./reportConfig";
+import {
+  buildReportPdf,
+  type ReportPdfTableSection,
+} from "./exportReportPdf";
+import type { PeriodReportMode } from "./periodReportKinds";
 
 export type ReportKpi = {
   value: string;
@@ -67,7 +80,9 @@ type Props = {
   kpis: ReportKpi[];
   labels: ReportBodyLabels;
   extraSections?: ReactNode;
-  reportSubtitle: string;
+  reportMode: PeriodReportMode;
+  periodLabel: string;
+  projectName: string;
   exportArgs: {
     projectId: number;
     fromTs: number;
@@ -86,7 +101,9 @@ function ReportBodyInner({
   kpis,
   labels,
   extraSections,
-  reportSubtitle,
+  reportMode,
+  periodLabel,
+  projectName,
   exportArgs,
   onExportApiChange,
 }: Props) {
@@ -175,7 +192,7 @@ function ReportBodyInner({
     try {
       const targetPath = await pickExportSavePath({
         title: "PDF speichern",
-        defaultFileName: defaultExportFileName("rustime-bericht", "pdf"),
+        defaultFileName: defaultExportFileName("frametrack-bericht", "pdf"),
         extension: "pdf",
         filterName: "PDF",
       });
@@ -183,48 +200,98 @@ function ReportBodyInner({
 
       setActiveExport("pdf");
 
-      const sections = [
+      const pieSections = [
         ...(activityTypePieSegments.length > 0
           ? [
               {
                 title: labels.activityTypePieTitle,
-                hint: labels.activityTypePieHint,
                 captureEl: activityTypeChartRef.current,
-                legendEntries: activityTypeLegendEntries,
-                maxImageHeightMm: 80,
               },
             ]
           : []),
+        ...(pieSegments.length > 0
+          ? [
+              {
+                title: labels.pieTitle,
+                captureEl: pieChartRef.current,
+              },
+            ]
+          : []),
+      ];
+
+      const tables: ReportPdfTableSection[] = [
         {
           title: labels.pieTitle,
           hint: labels.pieHint,
-          captureEl: pieChartRef.current,
-          legendEntries: pieLegendEntries,
-          maxImageHeightMm: 80,
-        },
-        {
-          title: labels.timelineTitle,
-          hint: labels.timelineHint,
-          captureEl: timelinePlotRef.current,
-          legendEntries: timelineLegendEntries,
-          maxImageHeightMm: 105,
+          items: [...report.by_category],
+          totalSeconds: report.total_active_seconds,
         },
       ];
 
+      if (activityTypePieSegments.length > 0) {
+        tables.push({
+          title: labels.activityTypePieTitle,
+          hint: labels.activityTypePieHint,
+          items: [...report.by_activity_type],
+          totalSeconds: report.total_active_seconds,
+        });
+      }
+
+      if (reportMode === "weekly") {
+        const weekly = report as WeeklyReport;
+        if (weekly.by_day.length > 0) {
+          tables.push({
+            title: "Aktivität pro Tag",
+            hint: "Geschätzte aktive Zeit je Kalendertag für dieses Projekt.",
+            items: [...weekly.by_day],
+            totalSeconds: report.total_active_seconds,
+            formatName: (iso) => formatIsoDateLong(iso),
+          });
+        }
+      }
+
+      try {
+        const byProject = await getByProjectForRange({
+          fromTs: exportArgs.fromTs,
+          toTs: exportArgs.toTs,
+          ...REPORT_DWELL_OPTS,
+        });
+        if (byProject.length > 0) {
+          const projectTotal = byProject.reduce((sum, item) => sum + item.value, 0);
+          tables.push({
+            title:
+              reportMode === "daily"
+                ? "Zeit pro Projekt (gesamter Tag)"
+                : "Zeit pro Projekt (gesamte Woche)",
+            hint:
+              reportMode === "daily"
+                ? "Alle Projekte an diesem Tag."
+                : "Alle Projekte in dieser Woche.",
+            items: byProject,
+            totalSeconds: projectTotal,
+          });
+        }
+      } catch (error) {
+        console.warn("PDF: Projektdaten für Export nicht geladen", error);
+      }
+
       const pdfBytes = await buildReportPdf({
-        subtitle: reportSubtitle,
+        reportType: reportMode,
+        projectName,
+        periodLabel,
         narrative: narrativeSummary,
         kpis,
         estimationHint: REPORT_ESTIMATION_HINT,
-        sections,
+        pieSections,
+        tables,
       });
 
-      const path = await invoke<string>("export_report_pdf_to_path", {
+      const path = await exportReportPdfToPath({
         pdfBytes: Array.from(pdfBytes),
         targetPath,
       });
       toast.success("PDF exportiert", {
-        detail: fileNameFromPath(path),
+        detail: formatExportSuccessDetail(path),
       });
     } catch (e) {
       console.error("report export pdf failed", e);
@@ -233,19 +300,22 @@ function ReportBodyInner({
       setActiveExport(null);
     }
   }, [
-    activityTypeLegendEntries,
     activityTypePieSegments.length,
+    exportArgs.fromTs,
+    exportArgs.toTs,
     kpis,
     labels.activityTypePieHint,
     labels.activityTypePieTitle,
     labels.pieHint,
     labels.pieTitle,
-    labels.timelineHint,
-    labels.timelineTitle,
     narrativeSummary,
-    pieLegendEntries,
-    reportSubtitle,
-    timelineLegendEntries,
+    periodLabel,
+    pieSegments.length,
+    projectName,
+    report.by_activity_type,
+    report.by_category,
+    report.total_active_seconds,
+    reportMode,
     toast,
   ]);
 
@@ -253,19 +323,19 @@ function ReportBodyInner({
     try {
       const targetPath = await pickExportSavePath({
         title: "JSON speichern",
-        defaultFileName: defaultExportFileName("rustime-export", "json"),
+        defaultFileName: defaultExportFileName("frametrack-export", "json"),
         extension: "json",
         filterName: "JSON",
       });
       if (!targetPath) return;
 
       setActiveExport("json");
-      const path = await invoke<string>("export_activities_json_to_path", {
+      const path = await exportActivitiesJsonToPath({
         ...exportArgs,
         targetPath,
       });
       toast.success("JSON exportiert", {
-        detail: fileNameFromPath(path),
+        detail: formatExportSuccessDetail(path),
       });
     } catch (e) {
       console.error("report export json failed", e);
@@ -279,7 +349,7 @@ function ReportBodyInner({
     try {
       const samplesPath = await pickExportSavePath({
         title: "CSV Zeiteinträge speichern",
-        defaultFileName: defaultExportFileName("rustime-samples", "csv"),
+        defaultFileName: defaultExportFileName("frametrack-samples", "csv"),
         extension: "csv",
         filterName: "CSV",
       });
@@ -287,16 +357,15 @@ function ReportBodyInner({
 
       setActiveExport("csv");
       const aggregatedPath = aggregatedCsvPathBeside(samplesPath);
-      const result = await invoke<ExportCsvResult>(
-        "export_activities_csv_to_paths",
-        {
-          ...exportArgs,
-          samplesPath,
-          aggregatedPath,
-        },
-      );
+      const result = await exportActivitiesCsvToPaths({
+        ...exportArgs,
+        samplesPath,
+        aggregatedPath,
+      });
       toast.success("CSV exportiert", {
-        detail: `${fileNameFromPath(result.samples_path)} · ${fileNameFromPath(result.aggregated_path)}`,
+        detail: formatExportSuccessDetail(result.samples_path, [
+          fileNameFromPath(result.aggregated_path),
+        ]),
       });
     } catch (e) {
       console.error("report export csv failed", e);
@@ -343,18 +412,27 @@ function ReportBodyInner({
         .filter(Boolean)
         .join(" ")}
     >
-      {narrativeSummary && (
-        <p className="periodReportNarrative">{narrativeSummary}</p>
-      )}
+      <header className="periodReportSummary">
+        <div className="periodReportSummaryHead">
+          <h3 className="periodReportSummaryTitle">{periodLabel}</h3>
+          <span className="periodReportProjectTag">{projectName}</span>
+        </div>
 
-      <div className="periodReportKpis">
-        {kpis.map((kpi) => (
-          <div key={kpi.label} className="periodReportKpi">
-            <span className="periodReportKpiValue">{kpi.value}</span>
-            <span className="periodReportKpiLabel">{kpi.label}</span>
-          </div>
-        ))}
-      </div>
+        {narrativeSummary && (
+          <p className="periodReportNarrative">{narrativeSummary}</p>
+        )}
+
+        <div className="periodReportKpis">
+          {kpis.map((kpi) => (
+            <div key={kpi.label} className="periodReportKpi">
+              <span className="periodReportKpiValue">{kpi.value}</span>
+              <span className="periodReportKpiLabel">{kpi.label}</span>
+            </div>
+          ))}
+        </div>
+
+        <p className="periodReportEstimationHint">{REPORT_ESTIMATION_HINT}</p>
+      </header>
 
       {extraSections}
 
@@ -388,6 +466,7 @@ function ReportBodyInner({
                 <ChartLegend
                   entries={activityTypeLegendEntries}
                   viewLabel={labels.activityTypePieLegend}
+                  variant="compact"
                 />
               </div>
             )}
@@ -396,7 +475,10 @@ function ReportBodyInner({
               <h4 className="periodReportChartTitle">{labels.pieTitle}</h4>
               <p className="periodReportChartHint">{labels.pieHint}</p>
               <div className="periodReportChartPane periodReportChartPanePie">
-                <div ref={pieChartRef} className="periodReportPdfCapture">
+                <div
+                  ref={pieChartRef}
+                  className="periodReportPdfCapture"
+                >
                   <ActivityPieChart
                     data={pieSegments}
                     categoryOrder={categoryOrder}
@@ -407,6 +489,7 @@ function ReportBodyInner({
               <ChartLegend
                 entries={pieLegendEntries}
                 viewLabel={labels.pieLegend}
+                variant="compact"
               />
             </div>
           </div>
@@ -427,6 +510,7 @@ function ReportBodyInner({
             <ChartLegend
               entries={timelineLegendEntries}
               viewLabel={labels.timelineLegend}
+              variant="compact"
             />
           </div>
         </>

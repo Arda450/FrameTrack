@@ -1,0 +1,312 @@
+/**
+ * app-sidebar.css – Linke Navigationssäule
+ * Komponente: layout/AppSidebar.tsx
+ */
+
+.appSidebar {
+  position: sticky;
+  top: 16px;
+  align-self: flex-start;
+  width: 200px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-strong);
+  box-sizing: border-box;
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
+  font-size: 0.84rem;
+}
+
+.appSidebarProjectsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.appSidebarBrand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.appSidebarLogo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.appSidebarBrandName {
+  font-family: "Manrope", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text);
+}
+
+.appSidebarBrandNameAccent {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.appSidebarNavItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 0.84rem;
+  font-weight: 650;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+}
+
+.appSidebarNavItem:hover {
+  filter: brightness(1.06);
+}
+
+.appSidebarNavItemActive {
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--surface) 70%, var(--text) 8%);
+}
+
+.appSidebarDivider {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.appSidebarProjectList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.appSidebarProjectsGroup {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.appSidebarProjectHeader {
+  min-height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 0 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.appSidebarEditButton {
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.appSidebarEditButton:hover,
+.appSidebarEditButtonActive {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.appSidebarProjectRow {
+  display: flex;
+  width: 100%;
+  gap: 3px;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid transparent;
+}
+
+.appSidebarProjectRow:hover {
+  filter: brightness(1.05);
+}
+
+.appSidebarProjectRowActive {
+  background: color-mix(in srgb, var(--danger) 55%, #1a1010);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+}
+
+.appSidebarProjectRowSelected,
+.appSidebarProjectRowActive.appSidebarProjectRowSelected {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  border-color: var(--accent);
+}
+
+.appSidebarProjectButton {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 6px 5px 4px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.appSidebarProjectIcon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+.appSidebarProjectRowActive .appSidebarProjectIcon {
+  background: transparent;
+  border-color: transparent;
+}
+
+.appSidebarSelectionIcon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  color: var(--accent);
+}
+
+.appSidebarProjectRowSelected .appSidebarSelectionIcon {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-strong));
+}
+
+.appSidebarProjectName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appSidebarEditActions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.appSidebarEditActions button {
+  min-width: 0;
+  min-height: 0;
+  padding: 5px 6px 5px 4px;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.appSidebarCancelEditButton {
+  color: var(--muted);
+}
+
+.appSidebarRenameSelectedButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.appSidebarRenameSelectedButton:not(:disabled):hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+}
+
+.appSidebarDeleteSelectedButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+}
+
+.appSidebarDeleteSelectedButton:not(:disabled):hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--danger) 20%, var(--surface));
+}
+
+.appSidebarProjectRowAdd {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--border) 80%, transparent);
+  background: transparent;
+}
+
+.appSidebarProjectRowAdd:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.appSidebarProjectIconAdd {
+  border-style: dashed;
+  color: var(--muted);
+  background: transparent;
+}
+
+.appSidebarProjectRowAdd:hover .appSidebarProjectIconAdd {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.appSidebarNewProject {
+  color: var(--muted);
+}
+
+.appSidebarProjectRowAdd:hover .appSidebarNewProject {
+  color: var(--text);
+}
+
+.appSidebarError {
+  margin: 0;
+  padding: 0 6px;
+  color: var(--danger);
+  font-size: 0.78rem;
+}

@@ -26,8 +26,8 @@ serde_json = "1"
 chrono = { version = "0.4", features = ["clock"] }
 
 # Workspace crates
-rustime-core = { path = "../../crates/rustime-core" }
-rustime-tracking = { path = "../../crates/rustime-tracking" }
-rustime-db = { path = "../../crates/rustime-db" }
+frametrack-core = { path = "../../crates/frametrack-core" }
+frametrack-tracking = { path = "../../crates/frametrack-tracking" }
+frametrack-db = { path = "../../crates/frametrack-db" }
 rusqlite.workspace = true
 tauri-plugin-dialog = "2.7.2"

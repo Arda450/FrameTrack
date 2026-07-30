@@ -11,9 +11,10 @@ use std::time::Duration;
 use tauri::{AppHandle, Emitter, State};
 
 use crate::dto::activity::ActivityDto;
-use rustime_core::models::WindowActivity;
-use rustime_tracking::{
-    current_timestamp, try_get_active_window_title, TrackingError, TrackingState,
+use frametrack_core::{models::WindowActivity, ActivityType};
+use frametrack_tracking::{
+    current_timestamp, try_get_active_window_title, ActiveWindowClassifier, TrackingError,
+    TrackingState,
 };
 
 const SAMPLE_INTERVAL_SECONDS: u64 = 2;
@@ -24,6 +25,7 @@ struct MinuteKey {
     project_id: i64,
     project_name: String,
     title: String,
+    activity_type: ActivityType,
 }
 
 #[derive(Debug)]
@@ -94,12 +96,13 @@ fn persist_dominant_minute(
         timestamp: accumulator
             .first_sample_ts
             .unwrap_or(accumulator.bucket_start),
+        activity_type: dominant.activity_type,
     };
     let Ok(db_conn) = db.lock() else {
         eprintln!("DB lock error while persisting minute");
         return;
     };
-    if let Err(error) = rustime_db::insert_aggregated_activity_with_project(
+    if let Err(error) = frametrack_db::insert_aggregated_activity_with_project(
         &db_conn,
         &activity,
         dominant.project_id,
@@ -135,12 +138,15 @@ pub fn start_tracking(state: State<TrackingState>, app: AppHandle) {
 
     thread::spawn(move || {
         let mut accumulator = MinuteAccumulator::new(current_timestamp());
+        let mut last_classification: Option<(String, ActivityType)> = None;
+        let classifier = ActiveWindowClassifier::new();
 
         while is_running.load(Ordering::SeqCst) && session_id.load(Ordering::SeqCst) == run_id {
             let timestamp = current_timestamp();
             if minute_start(timestamp) != accumulator.bucket_start {
                 persist_dominant_minute(&accumulator, &db, &app_handle);
                 accumulator.reset(timestamp);
+                last_classification = None;
             }
 
             let title = match try_get_active_window_title() {
@@ -157,6 +163,14 @@ pub fn start_tracking(state: State<TrackingState>, app: AppHandle) {
             };
 
             if !title.is_empty() {
+                let activity_type = match &last_classification {
+                    Some((last_title, activity_type)) if last_title == &title => *activity_type,
+                    _ => {
+                        let activity_type = classifier.classify(&title);
+                        last_classification = Some((title.clone(), activity_type));
+                        activity_type
+                    }
+                };
                 let proj = active_project.lock().ok().and_then(|g| g.clone());
                 if let Some((project_id, project_name)) = proj {
                     accumulator.record(
@@ -164,6 +178,7 @@ pub fn start_tracking(state: State<TrackingState>, app: AppHandle) {
                             project_id,
                             project_name,
                             title,
+                            activity_type,
                         },
                         timestamp,
                     );

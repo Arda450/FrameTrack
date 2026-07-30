@@ -2,7 +2,7 @@
 // Echte Commands: tauri-app/src-tauri/src/commands/*.rs
 
 // use tauri::State;
-// use rustime_tracking::TrackingState;
+// use frametrack_tracking::TrackingState;
 
 /// Frontend: invoke("is_tracking") → bool
 // #[tauri::command]

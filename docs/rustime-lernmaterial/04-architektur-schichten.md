@@ -1,6 +1,6 @@
 # Architektur-Schichten
 
-Grossbild von Rustime (vereinfacht).
+Grossbild von frametrack (vereinfacht).
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -16,7 +16,7 @@ Grossbild von Rustime (vereinfacht).
         ┌───────────────────┼───────────────────┐
         ▼                   ▼                   ▼
 ┌──────────────┐  ┌────────────────┐  ┌──────────────────┐
-│ rustime-     │  │ rustime-db     │  │ rustime-core     │
+│ frametrack-     │  │ frametrack-db     │  │ frametrack-core     │
 │ tracking     │  │ SQLite, dwell, │  │ Modelle, Labels  │
 │ Windows-API  │  │ Repositories   │  │ aus Fenstertitel │
 └──────────────┘  └────────────────┘  └──────────────────┘
@@ -24,7 +24,7 @@ Grossbild von Rustime (vereinfacht).
 
 ---
 
-## Crate: `rustime-core`
+## Crate: `frametrack-core`
 
 **Aufgabe:** Gemeinsame Typen und Hilfslogik ohne DB/UI.
 
@@ -33,21 +33,21 @@ Grossbild von Rustime (vereinfacht).
 
 ---
 
-## Crate: `rustime-db`
+## Crate: `frametrack-db`
 
 **Aufgabe:** Alles rund um SQLite.
 
-| Modul | Aufgabe |
-|-------|---------|
-| `schema` | Tabellen anlegen, Pfad `Dokumente/rustime-data/rustime.db` |
-| `activity_repo` | INSERT, paginierte SELECT |
-| `project_repo` | Projekte upserten/listen |
-| `dwell` | Verweildauer + Zeitserien-Buckets |
-| `seed` | Demo-Daten (nur für Tests) |
+| Modul           | Aufgabe                                                          |
+| --------------- | ---------------------------------------------------------------- |
+| `schema`        | Tabellen anlegen, Pfad `Dokumente/frametrack-data/frametrack.db` |
+| `activity_repo` | INSERT, paginierte SELECT                                        |
+| `project_repo`  | Projekte upserten/listen                                         |
+| `dwell`         | Verweildauer + Zeitserien-Buckets                                |
+| `seed`          | Demo-Daten (nur für Tests)                                       |
 
 ---
 
-## Crate: `rustime-tracking`
+## Crate: `frametrack-tracking`
 
 **Aufgabe:** Windows-Fenster lesen + `TrackingState`.
 
@@ -67,33 +67,33 @@ Grossbild von Rustime (vereinfacht).
 
 ## Frontend `tauri-app/src`
 
-| Ordner | Rolle |
-|--------|--------|
-| `components/` | UI-Bausteine |
-| `hooks/` | Wiederverwendbare Logik (z. B. Projekt-Picker) |
-| `utils/` | Chart-Hilfen, Farben, Buckets |
-| `styles/` | CSS nach Bereich |
+| Ordner        | Rolle                                          |
+| ------------- | ---------------------------------------------- |
+| `components/` | UI-Bausteine                                   |
+| `hooks/`      | Wiederverwendbare Logik (z. B. Projekt-Picker) |
+| `utils/`      | Chart-Hilfen, Farben, Buckets                  |
+| `styles/`     | CSS nach Bereich                               |
 
 ---
 
 ## Einstiegspunkte
 
-| Datei | Start |
-|-------|--------|
-| `src-tauri/src/main.rs` | OS-Prozess |
-| `src-tauri/src/lib.rs` | Tauri + DB + Commands |
-| `src/main.tsx` | React mount |
-| `src/App.tsx` | Tabs + globaler UI-State |
+| Datei                   | Start                    |
+| ----------------------- | ------------------------ |
+| `src-tauri/src/main.rs` | OS-Prozess               |
+| `src-tauri/src/lib.rs`  | Tauri + DB + Commands    |
+| `src/main.tsx`          | React mount              |
+| `src/App.tsx`           | Tabs + globaler UI-State |
 
 ---
 
 ## Design-Entscheidungen (Kurz)
 
-| Entscheidung | Warum |
-|--------------|--------|
-| Aggregation in Rust | Weniger Daten im WebView, eine Quelle für Pie/Export |
-| Keine RAM-Liste aller Aktivitäten | Speicher stabil bei langem Tracking |
-| Events nur bei Titelwechsel | WebView2 entlasten |
-| SQLite lokal | Privacy-by-Design |
+| Entscheidung                      | Warum                                                |
+| --------------------------------- | ---------------------------------------------------- |
+| Aggregation in Rust               | Weniger Daten im WebView, eine Quelle für Pie/Export |
+| Keine RAM-Liste aller Aktivitäten | Speicher stabil bei langem Tracking                  |
+| Events nur bei Titelwechsel       | WebView2 entlasten                                   |
+| SQLite lokal                      | Privacy-by-Design                                    |
 
 Zurück zur Übersicht: [README.md](./README.md)

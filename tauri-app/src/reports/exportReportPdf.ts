@@ -1,41 +1,46 @@
 import { jsPDF } from "jspdf";
 import { toPng } from "html-to-image";
-import type { ChartLegendEntry } from "../utils/chartLegend";
+import type { DwellSegment } from "../types";
+import { formatDurationSeconds } from "../utils/formatDuration";
 import type { ReportKpi } from "./ReportBody";
 
 const PAGE_W = 210;
 const PAGE_H = 297;
-const MARGIN = 14;
+const MARGIN = 12;
 const CONTENT_W = PAGE_W - 2 * MARGIN;
-const FOOTER_Y = 287;
+const FOOTER_Y = 282;
+
+const COLOR = {
+  text: [28, 28, 28] as [number, number, number],
+  muted: [100, 100, 100] as [number, number, number],
+  border: [218, 218, 218] as [number, number, number],
+  headerBg: [244, 244, 244] as [number, number, number],
+  zebra: [250, 250, 250] as [number, number, number],
+};
 
 export type ReportPdfChartSection = {
   title: string;
-  hint?: string;
   captureEl: HTMLElement | null;
-  legendEntries: ChartLegendEntry[];
-  maxImageHeightMm?: number;
+};
+
+export type ReportPdfTableSection = {
+  title: string;
+  hint?: string;
+  items: DwellSegment[];
+  totalSeconds: number;
+  formatName?: (name: string) => string;
 };
 
 export type BuildReportPdfOptions = {
-  subtitle: string;
+  reportType: "daily" | "weekly";
+  projectName: string;
+  periodLabel: string;
   narrative: string | null;
   kpis: ReportKpi[];
   estimationHint: string;
-  sections: ReportPdfChartSection[];
+  pieSections: ReportPdfChartSection[];
+  tables: ReportPdfTableSection[];
 };
-
-function hexToRgb(hex: string): [number, number, number] {
-  const normalized = hex.replace("#", "");
-  if (normalized.length !== 6) {
-    return [120, 120, 120];
-  }
-  return [
-    Number.parseInt(normalized.slice(0, 2), 16),
-    Number.parseInt(normalized.slice(2, 4), 16),
-    Number.parseInt(normalized.slice(4, 6), 16),
-  ];
-}
 
 function surfaceBackgroundColor(): string {
   const raw = getComputedStyle(document.documentElement)
@@ -76,170 +81,283 @@ function ensureSpace(doc: jsPDF, y: number, needed: number): number {
   return y;
 }
 
+function setTextColor(doc: jsPDF, color: [number, number, number]): void {
+  doc.setTextColor(color[0], color[1], color[2]);
+}
+
+function drawRule(doc: jsPDF, y: number): number {
+  doc.setDrawColor(...COLOR.border);
+  doc.setLineWidth(0.2);
+  doc.line(MARGIN, y, PAGE_W - MARGIN, y);
+  return y + 4;
+}
+
+function formatExportTimestamp(date: Date): string {
+  return date.toLocaleString("de-CH", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function addFooters(doc: jsPDF, estimationHint: string): void {
   const pages = doc.getNumberOfPages();
   for (let page = 1; page <= pages; page += 1) {
     doc.setPage(page);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
-    doc.setTextColor(120);
-    const footerLines = doc.splitTextToSize(estimationHint, CONTENT_W);
-    doc.text(footerLines, MARGIN, PAGE_H - 8);
-    doc.text(`Seite ${page} / ${pages}`, PAGE_W - MARGIN, PAGE_H - 8, {
+    doc.setFontSize(6.5);
+    setTextColor(doc, COLOR.muted);
+    const footerLines = doc.splitTextToSize(estimationHint, CONTENT_W - 28);
+    doc.text(footerLines, MARGIN, PAGE_H - 7);
+    doc.text(`Seite ${page} / ${pages}`, PAGE_W - MARGIN, PAGE_H - 7, {
       align: "right",
     });
   }
 }
 
-function addLegend(
+function addHeader(
   doc: jsPDF,
   y: number,
-  entries: ChartLegendEntry[],
+  options: BuildReportPdfOptions,
+  exportedAt: Date,
 ): number {
-  if (entries.length === 0) {
-    return y;
-  }
+  const reportTitle =
+    options.reportType === "daily" ? "Tagesbericht" : "Wochenbericht";
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  setTextColor(doc, COLOR.text);
+  doc.text(reportTitle, MARGIN, y);
+  y += 6;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10.5);
+  doc.text(options.projectName, MARGIN, y);
+  y += 4.5;
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
+  doc.setFontSize(9);
+  setTextColor(doc, COLOR.muted);
+  doc.text(options.periodLabel, MARGIN, y);
+  y += 4;
 
-  const visible = entries.slice(0, 14);
-  for (const entry of visible) {
-    y = ensureSpace(doc, y, 5);
-    const [r, g, b] = hexToRgb(entry.color);
-    doc.setFillColor(r, g, b);
-    doc.rect(MARGIN, y - 3, 3, 3, "F");
-    doc.setTextColor(40);
-    const line = `${entry.name} — ${entry.meta}`;
-    const wrapped = doc.splitTextToSize(line, CONTENT_W - 6);
-    doc.text(wrapped, MARGIN + 5, y);
-    y += wrapped.length * 3.6;
-  }
-
-  if (entries.length > visible.length) {
-    y = ensureSpace(doc, y, 5);
-    doc.setTextColor(100);
-    doc.text(
-      `… und ${entries.length - visible.length} weitere`,
-      MARGIN,
-      y,
-    );
-    y += 4;
-  }
-
-  return y + 2;
-}
-
-async function addImageSection(
-  doc: jsPDF,
-  y: number,
-  section: ReportPdfChartSection,
-  dataUrl: string,
-): Promise<number> {
-  y = ensureSpace(doc, y, 24);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(20);
-  doc.text(section.title, MARGIN, y);
+  doc.setFontSize(7.5);
+  doc.text(`Exportiert am ${formatExportTimestamp(exportedAt)}`, MARGIN, y);
   y += 5;
 
-  if (section.hint) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    const hintLines = doc.splitTextToSize(section.hint, CONTENT_W);
-    doc.text(hintLines, MARGIN, y);
-    y += hintLines.length * 3.5 + 2;
-  }
-
-  const img = await loadImage(dataUrl);
-  const maxHeight = section.maxImageHeightMm ?? 88;
-  let displayW = CONTENT_W;
-  let displayH = (img.height / img.width) * displayW;
-  if (displayH > maxHeight) {
-    displayH = maxHeight;
-    displayW = (img.width / img.height) * displayH;
-  }
-
-  y = ensureSpace(doc, y, displayH + 6);
-  doc.addImage(dataUrl, "PNG", MARGIN, y, displayW, displayH);
-  y += displayH + 4;
-  return addLegend(doc, y, section.legendEntries);
+  return drawRule(doc, y);
 }
 
-function addKpis(doc: jsPDF, y: number, kpis: ReportKpi[]): number {
+function addKpiGrid(doc: jsPDF, y: number, kpis: ReportKpi[]): number {
   if (kpis.length === 0) {
     return y;
   }
 
-  y = ensureSpace(doc, y, 16);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(60);
-  doc.text("Kennzahlen", MARGIN, y);
-  y += 5;
+  const cols = Math.min(kpis.length, 4);
+  const gap = 2.5;
+  const cellW = (CONTENT_W - gap * (cols - 1)) / cols;
+  const cellH = 13;
+  const rows = Math.ceil(kpis.length / cols);
+  const blockH = rows * cellH + (rows - 1) * gap;
 
-  doc.setFont("helvetica", "normal");
-  for (const kpi of kpis) {
-    y = ensureSpace(doc, y, 6);
+  y = ensureSpace(doc, y, blockH + 2);
+
+  kpis.forEach((kpi, index) => {
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+    const x = MARGIN + col * (cellW + gap);
+    const cellY = y + row * (cellH + gap);
+
+    doc.setDrawColor(...COLOR.border);
+    doc.setFillColor(...COLOR.headerBg);
+    doc.roundedRect(x, cellY, cellW, cellH, 1.2, 1.2, "FD");
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.setTextColor(20);
-    doc.text(kpi.value, MARGIN, y);
+    setTextColor(doc, COLOR.text);
+    const valueLines = doc.splitTextToSize(kpi.value, cellW - 4);
+    doc.text(valueLines[0] ?? kpi.value, x + cellW / 2, cellY + 5.5, {
+      align: "center",
+    });
+
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    doc.text(kpi.label, MARGIN + 42, y);
-    y += 5;
+    doc.setFontSize(7);
+    setTextColor(doc, COLOR.muted);
+    const labelLines = doc.splitTextToSize(kpi.label, cellW - 4);
+    doc.text(labelLines[0] ?? kpi.label, x + cellW / 2, cellY + 10, {
+      align: "center",
+    });
+  });
+
+  return y + blockH + 5;
+}
+
+function addNarrative(doc: jsPDF, y: number, narrative: string): number {
+  y = ensureSpace(doc, y, 12);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  setTextColor(doc, COLOR.text);
+  const lines = doc.splitTextToSize(narrative, CONTENT_W);
+  doc.text(lines, MARGIN, y);
+  return y + lines.length * 3.8 + 4;
+}
+
+async function addPieRow(
+  doc: jsPDF,
+  y: number,
+  sections: ReportPdfChartSection[],
+): Promise<number> {
+  const valid = sections.filter((section) => section.captureEl);
+  if (valid.length === 0) {
+    return y;
   }
 
-  return y + 4;
+  const gap = 4;
+  const colW = (CONTENT_W - gap * (valid.length - 1)) / valid.length;
+  const maxPieH = 38;
+  let rowH = 0;
+
+  y = ensureSpace(doc, y, maxPieH + 14);
+
+  for (let i = 0; i < valid.length; i += 1) {
+    const section = valid[i];
+    const el = section.captureEl;
+    if (!el) continue;
+
+    const x = MARGIN + i * (colW + gap);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    setTextColor(doc, COLOR.text);
+    const titleLines = doc.splitTextToSize(section.title, colW);
+    doc.text(titleLines, x + colW / 2, y, { align: "center" });
+
+    try {
+      const png = await captureElement(el);
+      const img = await loadImage(png);
+      let displayW = colW;
+      let displayH = (img.height / img.width) * displayW;
+      if (displayH > maxPieH) {
+        displayH = maxPieH;
+        displayW = (img.width / img.height) * displayH;
+      }
+      const imgX = x + (colW - displayW) / 2;
+      const imgY = y + 4;
+      doc.addImage(png, "PNG", imgX, imgY, displayW, displayH);
+      rowH = Math.max(rowH, 4 + displayH);
+    } catch (error) {
+      console.warn("PDF pie capture failed:", section.title, error);
+      rowH = Math.max(rowH, 8);
+    }
+  }
+
+  return y + rowH + 5;
+}
+
+function addTableSection(
+  doc: jsPDF,
+  y: number,
+  section: ReportPdfTableSection,
+): number {
+  if (section.items.length === 0) {
+    return y;
+  }
+
+  y = ensureSpace(doc, y, 14);
+  y += 2;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  setTextColor(doc, COLOR.text);
+  doc.text(section.title, MARGIN, y);
+  y += 4;
+
+  if (section.hint) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    setTextColor(doc, COLOR.muted);
+    const hintLines = doc.splitTextToSize(section.hint, CONTENT_W);
+    doc.text(hintLines, MARGIN, y);
+    y += hintLines.length * 3.2 + 2;
+  }
+
+  const colNameW = CONTENT_W * 0.52;
+  const colDurW = CONTENT_W * 0.24;
+  const rowH = 5.5;
+  const headerH = 6;
+
+  y = ensureSpace(doc, y, headerH + rowH);
+
+  doc.setFillColor(...COLOR.headerBg);
+  doc.rect(MARGIN, y - 3.5, CONTENT_W, headerH, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  setTextColor(doc, COLOR.muted);
+  doc.text("Eintrag", MARGIN + 2, y);
+  doc.text("Dauer", MARGIN + colNameW + 2, y);
+  doc.text("Anteil", MARGIN + colNameW + colDurW + 2, y, { align: "left" });
+  y += headerH - 1;
+
+  const formatName = section.formatName ?? ((name: string) => name);
+  const sorted = [...section.items].sort((a, b) => b.value - a.value);
+
+  sorted.forEach((item, index) => {
+    y = ensureSpace(doc, y, rowH);
+    if (index % 2 === 1) {
+      doc.setFillColor(...COLOR.zebra);
+      doc.rect(MARGIN, y - 3.2, CONTENT_W, rowH, "F");
+    }
+
+    const pct =
+      section.totalSeconds > 0
+        ? Math.round((item.value / section.totalSeconds) * 100)
+        : 0;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    setTextColor(doc, COLOR.text);
+    const name = formatName(item.name);
+    const nameLines = doc.splitTextToSize(name, colNameW - 4);
+    doc.text(nameLines[0] ?? name, MARGIN + 2, y);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    setTextColor(doc, COLOR.text);
+    doc.text(
+      formatDurationSeconds(item.value),
+      MARGIN + colNameW + 2,
+      y,
+    );
+
+    setTextColor(doc, COLOR.muted);
+    doc.text(`${pct} %`, MARGIN + colNameW + colDurW + 2, y);
+
+    y += rowH;
+  });
+
+  return y + 3;
 }
 
 export async function buildReportPdf(
   options: BuildReportPdfOptions,
 ): Promise<Uint8Array> {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const exportedAt = new Date();
   let y = MARGIN;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.setTextColor(20);
-  doc.text("Rustime Bericht", MARGIN, y);
-  y += 7;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(80);
-  const subtitleLines = doc.splitTextToSize(options.subtitle, CONTENT_W);
-  doc.text(subtitleLines, MARGIN, y);
-  y += subtitleLines.length * 4.5 + 4;
+  y = addHeader(doc, y, options, exportedAt);
+  y = addKpiGrid(doc, y, options.kpis);
 
   if (options.narrative) {
-    doc.setFontSize(10);
-    doc.setTextColor(30);
-    const narrativeLines = doc.splitTextToSize(options.narrative, CONTENT_W);
-    for (const line of narrativeLines) {
-      y = ensureSpace(doc, y, 5);
-      doc.text(line, MARGIN, y);
-      y += 4.5;
-    }
-    y += 4;
+    y = addNarrative(doc, y, options.narrative);
   }
 
-  y = addKpis(doc, y, options.kpis);
+  y = await addPieRow(doc, y, options.pieSections);
 
-  for (const section of options.sections) {
-    if (!section.captureEl) {
-      continue;
-    }
-    try {
-      const png = await captureElement(section.captureEl);
-      y = await addImageSection(doc, y, section, png);
-      y += 6;
-    } catch (error) {
-      console.warn("PDF chart capture failed:", section.title, error);
-    }
+  for (const table of options.tables) {
+    y = addTableSection(doc, y, table);
   }
 
   addFooters(doc, options.estimationHint);

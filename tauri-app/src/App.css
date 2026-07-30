@@ -1,20 +1,22 @@
 /**
- * App.css – Einstiegspunkt für globale Styles
- * Importiert alle Bereichs-Stylesheets (Reihenfolge beachten: Variablen zuerst).
- * Geladen in: main.tsx → App.tsx
+ * App.css – zentraler Einstieg für alle Styles.
+ * Globale Design-Tokens und komponentenspezifische Styles aus styles/.
  */
 
-@import "./styles/variables.css"; /* Design-Tokens, Hell/Dunkel */
-@import "./styles/window.css"; /* html/body/#root, Fenster-Mindestgrösse */
-@import "./styles/base.css"; /* Globale Basis, App-Logo, App-Icon */
-@import "./styles/scrollbars.css"; /* Einheitliche Scrollbar-Farben */
-@import "./styles/buttons.css"; /* Alle <button> und <input> app-weit */
-@import "./styles/date-input.css"; /* Datumsfelder mit Kalender-Icon */
-@import "./styles/layout.css"; /* Gemeinsame Section-Layouts (.container) */
-@import "./styles/overview.css"; /* OverviewPanel.tsx */
-@import "./styles/settings.css"; /* SettingsPanel.tsx */
-@import "./styles/activities-table.css"; /* ActivitiesTable.tsx */
-@import "./styles/charts.css"; /* PieChart, TimeSeriesChart, ChartLegend, ChartTooltip, OverviewPanel Charts */
-@import "./styles/report.css"; /* Tages- und Wochenberichte */
-@import "./styles/dialog.css"; /* Bestätigungsdialog (ConfirmDialog.tsx) */
-@import "./styles/toast.css"; /* Toast-Meldungen (ToastProvider) */
+@import "./styles/variables.css";
+@import "./styles/window.css";
+@import "./styles/base.css";
+@import "./styles/scrollbars.css";
+@import "./styles/buttons.css";
+@import "./styles/date-input.css";
+@import "./styles/layout.css";
+@import "./styles/app-shell.css";
+@import "./styles/app-sidebar.css";
+@import "./styles/export-menu.css";
+@import "./styles/overview.css";
+@import "./styles/settings.css";
+@import "./styles/activities-table.css";
+@import "./styles/charts.css";
+@import "./styles/report.css";
+@import "./styles/dialog.css";
+@import "./styles/toast.css";

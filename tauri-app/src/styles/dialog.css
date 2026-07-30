@@ -211,8 +211,71 @@
   min-width: 110px;
 }
 
+.confirmDialogPopup--compact {
+  width: min(340px, calc(100vw - 32px));
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+}
+
+.confirmDialogPopup--compact .confirmDialogIntro {
+  gap: 4px;
+}
+
+.confirmDialogPopup--compact .confirmDialogTitle {
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.confirmDialogPopup--compact .confirmDialogDescription {
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.confirmDialogActions--compact {
+  gap: 8px;
+}
+
+.confirmDialogActions--compact button {
+  min-width: 0;
+  min-height: 30px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+}
+
+.confirmDialogButtonWithIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
 .createProjectDialog {
   width: min(440px, calc(100vw - 48px));
+}
+
+.createProjectDialog--compact {
+  width: min(340px, calc(100vw - 32px));
+}
+
+.createProjectForm--compact {
+  gap: 10px;
+}
+
+.createProjectForm--compact .createProjectLabel {
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.createProjectForm--compact .createProjectInput {
+  padding: 6px 9px;
+  font-size: 0.84rem;
+  border-radius: 6px;
+}
+
+.createProjectForm--compact .createProjectError {
+  font-size: 0.78rem;
 }
 
 .createProjectForm {

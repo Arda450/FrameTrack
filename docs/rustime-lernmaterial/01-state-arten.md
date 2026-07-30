@@ -1,6 +1,6 @@
-# State-Arten in Rustime
+# State-Arten in frametrack
 
-In Rustime gibt es **mehrere „Zustände“ gleichzeitig**. Sie leben an verschiedenen Orten und haben verschiedene Aufgaben.
+In frametrack gibt es **mehrere „Zustände“ gleichzeitig**. Sie leben an verschiedenen Orten und haben verschiedene Aufgaben.
 
 ---
 
@@ -19,14 +19,12 @@ const [tableRevision, setTableRevision] = useState(0);
 const [dwellRevision, setDwellRevision] = useState(0);
 ```
 
-
 | State           | Bedeutung                                                  |
 | --------------- | ---------------------------------------------------------- |
 | `isTracking`    | Zeigt in der UI „Aktiv / Inaktiv“                          |
 | `activeProject` | Welches Projekt gerade gewählt ist (Kopie für die UI)      |
 | `tableRevision` | Zähler: Tabelle soll neu laden (z. B. nach `new-activity`) |
 | `dwellRevision` | Zähler: Charts alle 10 s neu laden beim Tracking           |
-
 
 ### Warum `tableRevision` / `dwellRevision`?
 
@@ -56,7 +54,7 @@ const [theme, setTheme] = useState<"dark" | "light">(() => {
 
 ## 2. Tauri Managed State (Backend, App-weit)
 
-**Wo:** `TrackingState` in `rustime-tracking`, registriert in `lib.rs` mit `.manage(...)`
+**Wo:** `TrackingState` in `frametrack-tracking`, registriert in `lib.rs` mit `.manage(...)`
 
 ```rust
 // lib.rs (vereinfacht)
@@ -74,13 +72,11 @@ pub fn is_tracking(state: State<TrackingState>) -> Result<bool, ApiError> {
 }
 ```
 
-
 | Eigenschaft                                                                          | Erklärung                        |
 | ------------------------------------------------------------------------------------ | -------------------------------- |
 | **Eine Instanz** pro App-Lauf                                                        | Gleicher State für alle Commands |
 | **Lebt im Rust-Prozess**                                                             | Unabhängig vom React-Render      |
 | **Quelle der Wahrheit** für Tracking, DB-Verbindung, aktives Projekt (Backend-Seite) |                                  |
-
 
 ---
 
@@ -111,12 +107,10 @@ state.is_running.store(false, Ordering::SeqCst);
 
 **Warum Atomic?** Mehrere Threads (UI-Thread + Tracking-Thread) lesen/schreiben **ohne Mutex** nur dieses Flag.
 
-
 | Konzept            | Rolle                                 |
 | ------------------ | ------------------------------------- |
 | `AtomicBool`       | Thread-sicherer Schalter an/aus       |
 | `Ordering::SeqCst` | Strikte Sichtbarkeit zwischen Threads |
-
 
 ### 3b. `Arc<Mutex<Connection>>` – SQLite
 
@@ -126,13 +120,11 @@ insert_activity_with_project(&db_conn, &activity, project_id)?;
 // lock wird am Ende des Scopes wieder freigegeben
 ```
 
-
 | Teil     | Bedeutung                                                                      |
 | -------- | ------------------------------------------------------------------------------ |
 | `Arc`    | **Shared ownership**: Haupt-Thread und Tracking-Thread teilen sich dieselbe DB |
 | `Mutex`  | **Nur einer** darf gleichzeitig schreiben/lesen                                |
 | `lock()` | Wartet, bis die DB frei ist                                                    |
-
 
 Ohne `Mutex` wären parallele Zugriffe von UI-Command und Tracking-Loop **unsicher**.
 
@@ -141,7 +133,7 @@ Ohne `Mutex` wären parallele Zugriffe von UI-Command und Tracking-Loop **unsich
 ```rust
 // Option = vielleicht kein Projekt gewählt
 // (i64, String) = (project_id, Anzeigename)
-*active_project.lock().unwrap() = Some((42, "rustime".into()));
+*active_project.lock().unwrap() = Some((42, "frametrack".into()));
 ```
 
 Backend speichert die Projekt-ID für Inserts im Tracking-Loop. Das Frontend hat **zusätzlich** `activeProject` in React (für Anzeige).
@@ -150,12 +142,10 @@ Backend speichert die Projekt-ID für Inserts im Tracking-Loop. Das Frontend hat
 
 ## 4. Zwei „aktive Projekt“-States – warum?
 
-
 | Ort                                   | Zweck                                         |
 | ------------------------------------- | --------------------------------------------- |
 | `TrackingState.active_project` (Rust) | Tracking-Loop schreibt `project_id` in SQLite |
 | `App.activeProject` (React)           | Tabs, Labels, Charts filtern nach Projekt     |
-
 
 Nach `set_active_project` (Command) sollten beide übereinstimmen. Nach „Daten löschen“ setzt das Backend `None` und ruft `onDataCleared()` im UI auf.
 
@@ -179,15 +169,13 @@ const [chartView, setChartView] = useState<"pie" | "timeseries">("pie");
 
 ## 6. Übersichtstabelle
 
-
-| State-Art        | Ort          | Persistenz                        | Wer synchronisiert  |
-| ---------------- | ------------ | --------------------------------- | ------------------- |
-| React `useState` | WebView      | Session (+ Theme in localStorage) | React selbst        |
-| Revision-Counter | React        | Nein                              | Events / Intervalle |
-| `TrackingState`  | Rust/Tauri   | RAM + SQLite                      | Commands            |
-| SQLite-Daten     | `rustime.db` | Disk (Dokumente)                  | DB-Commands         |
-| Tauri Events     | IPC          | Nein                              | `emit` / `listen`   |
-
+| State-Art        | Ort             | Persistenz                        | Wer synchronisiert  |
+| ---------------- | --------------- | --------------------------------- | ------------------- |
+| React `useState` | WebView         | Session (+ Theme in localStorage) | React selbst        |
+| Revision-Counter | React           | Nein                              | Events / Intervalle |
+| `TrackingState`  | Rust/Tauri      | RAM + SQLite                      | Commands            |
+| SQLite-Daten     | `frametrack.db` | Disk (Dokumente)                  | DB-Commands         |
+| Tauri Events     | IPC             | Nein                              | `emit` / `listen`   |
 
 ---
 

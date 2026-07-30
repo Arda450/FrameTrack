@@ -9,13 +9,230 @@
  *   - ChartTooltip.tsx (Tooltip-Inhalt für Recharts)
  */
 
-/* --- OverviewPanel: Pie + Zeitverlauf + gemeinsame Legende --- */
+/* --- OverviewPanel: Pie + Zeitverlauf + Projektinfo + gemeinsame Legende --- */
+.chartSectionLayout {
+  display: grid;
+  grid-template-columns: minmax(320px, 36%) minmax(0, 1fr);
+  gap: 24px;
+  align-items: stretch;
+  width: 100%;
+}
+
+.projectInfoPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 100%;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-strong);
+  text-align: left;
+  overflow: hidden;
+}
+
+.projectInfoHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 22px 18px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-strong) 88%, var(--text) 4%);
+}
+
+.projectInfoHeader h4 {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.projectInfoStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.projectInfoStatusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+
+.projectInfoStatusBadgeActive {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.projectInfoStatusBadgeActive .projectInfoStatusDot {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.projectInfoBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 22px 22px;
+}
+
+.projectInfoPanel .overviewStatCards {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.projectInfoPanel .overviewStatCards article {
+  padding: 12px 14px;
+  background: var(--surface);
+}
+
+.projectInfoPanel .overviewStatCards strong {
+  font-size: 1.05rem;
+}
+
+.projectInfoSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.projectInfoSectionTitle {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.projectInfoList {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.projectInfoList > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.projectInfoList > div:last-child {
+  border-bottom: none;
+}
+
+.projectInfoList dt {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.projectInfoList dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+.projectInfoPanelError {
+  padding: 20px 22px;
+}
+
+.projectInfoPanelSkeleton {
+  min-height: 420px;
+  padding: 20px 22px;
+  gap: 14px;
+}
+
+.projectInfoSkeletonTitle,
+.projectInfoSkeletonBadge,
+.projectInfoSkeletonLine,
+.projectInfoSkeletonCard {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--surface) 80%, var(--text) 8%) 0%,
+    color-mix(in srgb, var(--surface) 60%, var(--text) 12%) 50%,
+    color-mix(in srgb, var(--surface) 80%, var(--text) 8%) 100%
+  );
+  background-size: 200% 100%;
+  animation: chartSkeletonPulse 1.4s ease-in-out infinite;
+}
+
+.projectInfoSkeletonTitle {
+  width: 55%;
+  height: 20px;
+}
+
+.projectInfoSkeletonBadge {
+  width: 42%;
+  height: 28px;
+  border-radius: 999px;
+}
+
+.projectInfoSkeletonCards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.projectInfoSkeletonCard {
+  width: 100%;
+  height: 58px;
+}
+
+.projectInfoSkeletonLine {
+  width: 100%;
+  height: 42px;
+}
+
+@media (max-width: 900px) {
+  .chartSectionLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
 .chartWithSharedLegend {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
+  min-width: 0;
+}
+
+.chartSectionLayout .chartPane {
+  justify-content: center;
+}
+
+.chartSectionLayout .pieChartPlot {
+  width: min(100%, 500px);
+  max-width: 500px;
+  margin: 0 auto;
 }
 
 .chartPane {
@@ -34,7 +251,14 @@
 /* --- ProjectBarChart.tsx (Recharts, horizontal) --- */
 .projectBarChartPlot {
   width: 100%;
-  min-height: 100px;
+  min-height: 0;
+}
+
+.projectBarChartEmpty {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-style: italic;
+  font-size: 0.9rem;
 }
 
 /* --- PieChart.tsx (Recharts) --- */
@@ -229,38 +453,68 @@
   flex-shrink: 0;
 }
 
-/* Zeitverteilung/Zeitverlauf-Legende (Übersicht) wie in Tages-/Wochenbericht:
-   ohne Container, einspaltig gestapelt, kompakte Schrift. */
-.chartWithSharedLegend .chartLegend {
+/* Kompakte Legende: einspaltig, Titel darüber, Einträge in gerahmter Liste */
+.chartLegendCompact {
+  width: 100%;
+  max-width: 100%;
   border: none;
   background: none;
-  padding: 4px 8px 0;
+  padding: 0;
+  margin: 8px 0 0;
 }
 
-.chartWithSharedLegend .chartLegendHint {
+.chartLegendCompact .chartLegendHint {
   margin: 0 0 6px;
   font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
-.chartWithSharedLegend .chartLegendList {
-  padding: 0 8px;
-  grid-template-columns: 1fr;
+.chartLegendCompact .chartLegendList {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 14px;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-strong);
+  display: flex;
+  flex-direction: column;
   gap: 6px;
 }
 
-.chartWithSharedLegend .chartLegendLabel {
-  font-size: 0.82rem;
+.chartLegendCompact .chartLegendItem {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+  width: 100%;
 }
 
-.chartWithSharedLegend .chartLegendMeta {
+.chartLegendCompact .chartLegendLabel {
+  flex: unset;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.chartLegendCompact .chartLegendMeta {
   font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  justify-self: end;
+}
+
+.chartWithSharedLegend .chartLegendCompact {
+  margin-top: 4px;
 }
 
 @media (max-width: 700px) {
-  .chartWithSharedLegend .chartLegendLabel {
+  .chartLegendCompact .chartLegendLabel {
     font-size: 0.76rem;
   }
-  .chartWithSharedLegend .chartLegendMeta {
+  .chartLegendCompact .chartLegendMeta {
     font-size: 0.72rem;
   }
 }

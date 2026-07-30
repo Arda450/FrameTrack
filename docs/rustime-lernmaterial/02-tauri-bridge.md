@@ -1,6 +1,6 @@
 # Tauri-Bridge: UI ↔ Rust
 
-Rustime ist eine **Tauri-App**: React im WebView, Logik in Rust. Die Brücke besteht aus **Commands** (Anfrage/Antwort) und **Events** (Push vom Backend).
+frametrack ist eine **Tauri-App**: React im WebView, Logik in Rust. Die Brücke besteht aus **Commands** (Anfrage/Antwort) und **Events** (Push vom Backend).
 
 ---
 
@@ -48,12 +48,12 @@ pub fn get_activities_page(
 ])
 ```
 
-| Schritt | Was passiert |
-|---------|----------------|
-| 1 | UI: `invoke("command_name", { args })` |
-| 2 | Tauri serialisiert JSON |
-| 3 | Rust-Command läuft (oft mit `State<TrackingState>`) |
-| 4 | Rückgabe als JSON ans Frontend |
+| Schritt | Was passiert                                        |
+| ------- | --------------------------------------------------- |
+| 1       | UI: `invoke("command_name", { args })`              |
+| 2       | Tauri serialisiert JSON                             |
+| 3       | Rust-Command läuft (oft mit `State<TrackingState>`) |
+| 4       | Rückgabe als JSON ans Frontend                      |
 
 **Merksatz:** Commands sind wie **API-Endpunkte**, nur lokal zwischen WebView und Rust.
 
@@ -78,11 +78,11 @@ const unlisten = await listen<Activity>("new-activity", () => {
 });
 ```
 
-| Commands | Events |
-|----------|--------|
+| Commands    | Events                 |
+| ----------- | ---------------------- |
 | UI fragt an | Backend meldet spontan |
-| `invoke` | `listen` / `emit` |
-| Pull | Push |
+| `invoke`    | `listen` / `emit`      |
+| Pull        | Push                   |
 
 ---
 

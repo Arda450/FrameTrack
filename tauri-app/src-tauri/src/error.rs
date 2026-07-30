@@ -1,7 +1,7 @@
 // definiert api errors
 
-use rustime_db::DbError;
-use rustime_tracking::TrackingError;
+use frametrack_db::DbError;
+use frametrack_tracking::TrackingError;
 use serde::Serialize;
 use std::fmt::{Display, Formatter};
 

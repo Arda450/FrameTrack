@@ -1,6 +1,6 @@
 //! DTO für eine erfasste Aktivität (Tabelle, Events, Legacy-Liste).
 
-use rustime_core::window_context::format_context_label_from_title;
+use frametrack_core::window_context::format_context_label_from_title;
 use serde::Serialize;
 
 /// Eine Aktivität, wie sie die UI per `invoke` oder `new-activity`-Event erhält.

@@ -6,11 +6,9 @@ import {
   clampIsoDateToToday,
   dateInputToFromTs,
   dateInputToToTs,
-  formatIsoDate,
   formatIsoDateLong,
   formatTimeFromTs,
   formatWeekLabel,
-  formatWeekRange,
   isCurrentWeek,
   isIsoDateBeforeToday,
   todayIsoDate,
@@ -61,7 +59,7 @@ function buildLabels(
     pieEmpty: `Keine Kategoriedaten für ${mode === "daily" ? "diesen Tag" : "diese Woche"}.`,
     activityTypePieTitle: "Tätigkeitsklassen",
     activityTypePieHint:
-      "Aufteilung nach Tätigkeit (Entwicklung, Kommunikation, Recherche, Organisation, Sonstiges).",
+      "Aufteilung nach Tätigkeit (Entwicklung, Kommunikation, Recherche, Organisation, Unterhaltung, Einkaufen, System, Sonstiges).",
     activityTypePieLegend: `Anteil ${an}`,
     activityTypePieEmpty: `Keine Tätigkeitsdaten für ${mode === "daily" ? "diesen Tag" : "diese Woche"}.`,
     timelineTitle:
@@ -136,41 +134,39 @@ function topCategoryShare(
 
 export function buildDailyNarrative(
   report: DailyReport,
-  isoDate: string,
+  _isoDate: string,
 ): string {
-  const dateLabel = formatIsoDate(isoDate);
   if (report.total_active_seconds === 0) {
-    return `Am ${dateLabel} wurden keine aktive Zeit für dieses Projekt geschätzt.`;
+    return "Keine aktive Zeit für dieses Projekt geschätzt.";
   }
   const active = formatDurationSeconds(report.total_active_seconds);
   const top = topCategoryShare(report);
   if (!top) {
-    return `Am ${dateLabel} hast du ca. ${active} aktiv gearbeitet.`;
+    return `Ca. ${active} aktiv gearbeitet.`;
   }
-  return `Am ${dateLabel} hast du ca. ${active} aktiv gearbeitet - Schwerpunkt: ${top.name} (${top.pct} %).`;
+  return `Ca. ${active} aktiv gearbeitet – Schwerpunkt: ${top.name} (${top.pct} %).`;
 }
 
 export function buildWeeklyNarrative(
   report: WeeklyReport,
-  weekStart: string,
-  weekEnd: string,
+  _weekStart: string,
+  _weekEnd: string,
 ): string {
-  const rangeLabel = formatWeekRange(weekStart, weekEnd);
   if (report.total_active_seconds === 0) {
-    return `In der Woche ${rangeLabel} wurde keine aktive Zeit für dieses Projekt geschätzt.`;
+    return "Keine aktive Zeit für dieses Projekt geschätzt.";
   }
   const active = formatDurationSeconds(report.total_active_seconds);
   const top = topCategoryShare(report);
-  let text = `In der Woche ${rangeLabel} hast du ca. ${active} aktiv gearbeitet`;
+  let text = `Ca. ${active} aktiv gearbeitet`;
   if (top) {
-    text += ` — Schwerpunkt: ${top.name} (${top.pct} %)`;
+    text += ` – Schwerpunkt: ${top.name} (${top.pct} %)`;
   }
   const busiest = report.by_day.reduce(
     (best, day) => (day.value > best.value ? day : best),
     report.by_day[0],
   );
   if (busiest) {
-    text += `. Stärkster Tag: ${formatIsoDateLong(busiest.name)}.`;
+    text += `. Stärkster Tag: ${formatIsoDateLong(busiest.name)}`;
   } else {
     text += ".";
   }

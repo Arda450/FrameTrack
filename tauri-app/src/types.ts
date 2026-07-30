@@ -4,6 +4,19 @@ export type Project = {
   path: string;
 };
 
+export type ProjectStats = {
+  project_id: number;
+  name: string;
+  created_at: number;
+  activity_count: number;
+  total_active_seconds: number;
+  today_active_seconds: number;
+  recent_active_seconds: number;
+  active_days: number;
+  first_activity_ts: number | null;
+  last_activity_ts: number | null;
+};
+
 export type Activity = {
   title: string;
   context_label: string;

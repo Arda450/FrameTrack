@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-  24-Stunden-Dauerbetrieb- und Performance-Test fuer Rustime.
+  24-Stunden-Dauerbetrieb- und Performance-Test fuer FrameTrack.
 
 .DESCRIPTION
-  Startet den Release-Build von Rustime und misst in einem festen Intervall
+  Startet den Release-Build von FrameTrack und misst in einem festen Intervall
   RAM (Working Set) und CPU-Auslastung - getrennt nach:
-    - App        : der/die Prozess(e) "tauri-app.exe"
+    - App        : der/die Prozess(e) "FrameTrack.exe"
     - WebView2   : die von der App gestarteten "msedgewebview2.exe"-Prozesse
     - Total      : Summe aus App + WebView2
 
@@ -25,7 +25,7 @@
   Projekt waehlen und "Starte Tracking" druecken.
 
 .PARAMETER Exe
-  Pfad zur zu testenden Exe. Standard: target/release/tauri-app.exe.
+  Pfad zur zu testenden Exe. Standard: target/release/FrameTrack.exe.
 
 .PARAMETER IntervalSec
   Mess-Intervall in Sekunden. Standard: 60.
@@ -34,7 +34,7 @@
   Testdauer in Stunden. Standard: 24.
 
 .PARAMETER OutCsv
-  Pfad zur Ausgabe-CSV. Standard: tools/perf/results/rustime-<Zeitstempel>.csv.
+  Pfad zur Ausgabe-CSV. Standard: tools/perf/results/frametrack-<Zeitstempel>.csv.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File tools/perf/run-24h-test.ps1
@@ -45,7 +45,7 @@
 #>
 
 param(
-  [string]$Exe = "$PSScriptRoot\..\..\target\release\tauri-app.exe",
+  [string]$Exe = "$PSScriptRoot\..\..\target\release\FrameTrack.exe",
   [int]$IntervalSec = 60,
   [double]$DurationHours = 24,
   [string]$OutCsv = ""
@@ -68,7 +68,7 @@ if ([string]::IsNullOrWhiteSpace($OutCsv)) {
     New-Item -ItemType Directory -Path $resultsDir | Out-Null
   }
   $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
-  $OutCsv = Join-Path $resultsDir "rustime-$stamp.csv"
+  $OutCsv = Join-Path $resultsDir "frametrack-$stamp.csv"
 }
 
 # Exe pruefen
@@ -77,9 +77,9 @@ if (-not (Test-Path $Exe)) {
   exit 1
 }
 $Exe = (Resolve-Path $Exe).Path
-$AppExeName = [System.IO.Path]::GetFileName($Exe)   # z. B. tauri-app.exe
+$AppExeName = [System.IO.Path]::GetFileName($Exe)   # z. B. FrameTrack.exe
 
-Write-Host "=== Rustime 24h-Performance-Test ===" -ForegroundColor Cyan
+Write-Host "=== FrameTrack 24h-Performance-Test ===" -ForegroundColor Cyan
 Write-Host "Exe:         $Exe"
 Write-Host "App-Prozess: $AppExeName"
 Write-Host "Intervall:   $IntervalSec s"

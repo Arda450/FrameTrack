@@ -1,0 +1,10 @@
+[package]
+name = "frametrack-db"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+frametrack-core = { path = "../frametrack-core" }
+rusqlite.workspace = true
+dirs.workspace = true
+chrono = "0.4"

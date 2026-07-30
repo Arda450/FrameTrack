@@ -22,7 +22,7 @@ export function EventBeispiel() {
       const unlisten = await listen<ActivityDto>("new-activity", (event) => {
         if (cancelled) return;
         console.log("Neues Fenster:", event.payload.title);
-        // In Rustime: tableRevision++ statt jede Activity in useState[]
+        // In frametrack: tableRevision++ statt jede Activity in useState[]
       });
 
       return unlisten;

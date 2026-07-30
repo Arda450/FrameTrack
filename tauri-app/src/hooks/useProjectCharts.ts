@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { getDwellByCategory, getTimeSeriesByCategory } from "../api/stats";
 import { useEffect, useRef, useState } from "react";
 import type { CategoryTimeSeriesPoint } from "../types";
 import type { PieSegment } from "../components/charts/PieChart";
@@ -6,6 +6,7 @@ import { mergeCategoryOrder } from "../utils/chartLegend";
 import { apiErrorMessage } from "../utils/apiError";
 
 const VISIBLE_HOURS = 24;
+export const PROJECT_CHART_VISIBLE_HOURS = VISIBLE_HOURS;
 export const PROJECT_CHART_BUCKET_SECONDS = 15 * 60;
 export const PROJECT_CHART_OPTIONS = {
   maxSegmentGapSeconds: 120,
@@ -52,13 +53,13 @@ export function useProjectCharts(
     const toTs = Math.floor(Date.now() / 1000);
     const fromTs = toTs - VISIBLE_HOURS * 60 * 60;
     Promise.all([
-      invoke<PieSegment[]>("get_dwell_by_category", {
+      getDwellByCategory({
         projectId,
         fromTs,
         toTs,
         ...PROJECT_CHART_OPTIONS,
       }),
-      invoke<CategoryTimeSeriesPoint[]>("get_time_series_by_category", {
+      getTimeSeriesByCategory({
         projectId,
         fromTs,
         toTs,

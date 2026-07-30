@@ -9,13 +9,13 @@ use crate::dto::stats::{
     CategoryTimeSeriesPointDto, CategoryValueDto, DailyReportDto, DwellSegmentDto, WeeklyReportDto,
 };
 use crate::error::ApiError;
-use rustime_core::{classify_activity_type, ActivityType};
-use rustime_db::{
+use frametrack_core::ActivityType;
+use frametrack_db::{
     dwell_by_category_in_range, dwell_time_series_by_category, get_activities_filtered,
     get_activities_for_project_in_range, ActivitiesFilter, ActivityWithProject, DwellOptions,
     TimeSeriesOptions,
 };
-use rustime_tracking::TrackingState;
+use frametrack_tracking::TrackingState;
 
 pub const SECONDS_PER_DAY: u64 = 86_400;
 pub const DEFAULT_GAP_SECS: u64 = 120;
@@ -82,7 +82,7 @@ pub fn day_end_exclusive(day_start_ts: u64) -> u64 {
     day_start_ts.saturating_add(SECONDS_PER_DAY)
 }
 
-fn map_dwell_segments(segments: Vec<rustime_db::DwellSegment>) -> Vec<DwellSegmentDto> {
+fn map_dwell_segments(segments: Vec<frametrack_db::DwellSegment>) -> Vec<DwellSegmentDto> {
     segments
         .into_iter()
         .map(|s| DwellSegmentDto {
@@ -93,7 +93,7 @@ fn map_dwell_segments(segments: Vec<rustime_db::DwellSegment>) -> Vec<DwellSegme
 }
 
 fn map_time_series_points(
-    points: Vec<rustime_db::CategoryTimeSeriesPoint>,
+    points: Vec<frametrack_db::CategoryTimeSeriesPoint>,
 ) -> Vec<CategoryTimeSeriesPointDto> {
     points
         .into_iter()
@@ -125,7 +125,7 @@ fn compute_by_activity_type(
     let mut by_type: HashMap<ActivityType, Vec<ActivityWithProject>> = HashMap::new();
 
     for row in rows {
-        let activity_type = classify_activity_type(&row.title);
+        let activity_type = row.effective_activity_type();
         by_type.entry(activity_type).or_default().push(row.clone());
     }
 
@@ -315,7 +315,7 @@ pub fn get_daily_report(
             dwell,
         },
     );
-    let fallback_name = rustime_db::get_project_by_id(&db_conn, project_id)
+    let fallback_name = frametrack_db::get_project_by_id(&db_conn, project_id)
         .ok()
         .flatten()
         .map(|p| p.name);
@@ -372,7 +372,7 @@ pub fn get_weekly_report(
             dwell,
         },
     );
-    let fallback_name = rustime_db::get_project_by_id(&db_conn, project_id)
+    let fallback_name = frametrack_db::get_project_by_id(&db_conn, project_id)
         .ok()
         .flatten()
         .map(|p| p.name);

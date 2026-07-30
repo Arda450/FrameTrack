@@ -22,6 +22,19 @@
   --accent: #4a9;
   --danger: #e54;
   --warning: #f80;
+  /* Chart-Palette (Sidebar-Icons, Balken, Legenden) */
+  --chart-0: #4a9eff;
+  --chart-1: #00c49f;
+  --chart-2: #ffbb28;
+  --chart-3: #ff6b6b;
+  --chart-4: #a78bfa;
+  --chart-5: #f472b6;
+  --chart-6: #34d399;
+  --chart-7: #fb923c;
+  --chart-8: #38bdf8;
+  --chart-9: #e879f9;
+  --chart-10: #facc15;
+  --chart-11: #2dd4bf;
   /* Scrollbars (z. B. TimeSeriesChart) */
   --scrollbar-track: #0a0a0a;
   --scrollbar-thumb: #2e2e2e;
@@ -40,6 +53,19 @@
   --text-inverse: #f0f0f0;
   --muted: #555555;
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  /* Etwas kräftigere Töne für guten Kontrast auf hellem Hintergrund */
+  --chart-0: #2563eb;
+  --chart-1: #059669;
+  --chart-2: #d97706;
+  --chart-3: #dc2626;
+  --chart-4: #7c3aed;
+  --chart-5: #db2777;
+  --chart-6: #16a34a;
+  --chart-7: #ea580c;
+  --chart-8: #0284c7;
+  --chart-9: #c026d3;
+  --chart-10: #ca8a04;
+  --chart-11: #0d9488;
   --scrollbar-track: #d8d8d8;
   --scrollbar-thumb: #888888;
   --scrollbar-thumb-hover: #666666;

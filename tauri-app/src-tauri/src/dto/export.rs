@@ -16,16 +16,14 @@ pub struct ExportMeta {
     pub filter_context_query: Option<String>,
 }
 
-/// Eine exportierte Aktivität mit maschinen- und menschenlesbaren Zeitstempeln.
+/// Eine exportierte Aktivität (Zeitpunkt als Unix-Sekunden, siehe `ExportMeta::timezone`).
 #[derive(Serialize)]
 pub struct ExportActivity {
     pub title: String,
     pub context_label: String,
-    /// Tätigkeitsklasse (Entwicklung, Kommunikation, Recherche, Organisation, Sonstiges).
+    /// Tätigkeitsklasse (Entwicklung, Kommunikation, Recherche, Organisation, Unterhaltung, …).
     pub activity_type: String,
     pub timestamp: u64,
-    pub timestamp_utc: String,
-    pub timestamp_local: String,
     pub project_id: Option<i64>,
     pub project_name: Option<String>,
 }

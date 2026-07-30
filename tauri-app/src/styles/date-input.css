@@ -39,11 +39,6 @@
   background-color: var(--text);
 }
 
-.periodReportDateField .appDateInput {
-  min-height: 36px;
-  box-sizing: border-box;
-}
-
 .activitiesFilterField .appDateInput {
   margin-top: 2px;
 }

@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use chrono::{Local, TimeZone, Utc};
+use chrono::{Local, TimeZone};
 use tauri::State;
 
 use crate::dto::export::{
@@ -15,12 +15,12 @@ use crate::dto::export::{
 };
 use crate::error::ApiError;
 
-use rustime_core::{classify_activity_type, format_context_label_from_title, ActivityType};
-use rustime_db::{
+use frametrack_core::{format_context_label_from_title, ActivityType};
+use frametrack_db::{
     dwell_by_category, dwell_by_category_in_range, get_activities_filtered, ActivitiesFilter,
     ActivityWithProject, DwellOptions, DwellSegment,
 };
-use rustime_tracking::{current_timestamp, TrackingState};
+use frametrack_tracking::{current_timestamp, TrackingState};
 
 const DWELL_GAP_SECS: u64 = 120;
 const DWELL_TAIL_SECS: u64 = 2;
@@ -49,29 +49,14 @@ impl ExportRequest {
 }
 
 fn to_export_activity(a: ActivityWithProject) -> ExportActivity {
-    let ts = a.timestamp as i64;
     let context_label = format_context_label_from_title(&a.title);
-    let activity_type = classify_activity_type(&a.title).label().to_string();
-
-    let iso_utc = Utc
-        .timestamp_opt(ts, 0)
-        .single()
-        .map(|dt| dt.to_rfc3339())
-        .unwrap_or_default();
-
-    let iso_local = Local
-        .timestamp_opt(ts, 0)
-        .single()
-        .map(|dt| dt.to_rfc3339())
-        .unwrap_or_default();
+    let activity_type = a.effective_activity_type().label().to_string();
 
     ExportActivity {
         title: a.title,
         context_label,
         activity_type,
         timestamp: a.timestamp,
-        timestamp_utc: iso_utc,
-        timestamp_local: iso_local,
         project_id: a.project_id,
         project_name: a.project_name,
     }
@@ -178,7 +163,7 @@ fn compute_by_activity_type(
     let mut by_type: HashMap<ActivityType, Vec<ActivityWithProject>> = HashMap::new();
 
     for row in rows {
-        let activity_type = classify_activity_type(&row.title);
+        let activity_type = row.effective_activity_type();
         by_type.entry(activity_type).or_default().push(row.clone());
     }
 
@@ -210,7 +195,7 @@ fn build_payload(rows: Vec<ActivityWithProject>, req: &ExportRequest) -> ExportP
 
     ExportPayload {
         meta: ExportMeta {
-            format_version: 3,
+            format_version: 4,
             exported_at_unix: current_timestamp(),
             sample_count,
             aggregated_count,
@@ -248,11 +233,12 @@ fn parse_target_path(path: &str) -> Result<PathBuf, ApiError> {
 }
 
 fn escape_csv_field(value: &str) -> String {
-    if value.contains(';') || value.contains('"') || value.contains('\n') || value.contains('\r') {
-        format!("\"{}\"", value.replace('"', "\"\""))
-    } else {
-        value.to_string()
+    let needs_quotes = [';', '"', '\n', '\r'].iter().any(|&c| value.contains(c));
+    if needs_quotes {
+        let escaped = value.replace('"', "\"\"");
+        return format!("\"{}\"", escaped);
     }
+    value.to_string()
 }
 
 fn format_date_local(ts: u64) -> String {
@@ -278,12 +264,12 @@ fn format_duration_hms(seconds: u64) -> String {
     let minutes = (seconds % 3600) / 60;
     let secs = seconds % 60;
     if hours > 0 {
-        format!("{hours} h {minutes} min {secs} s")
-    } else if minutes > 0 {
-        format!("{minutes} min {secs} s")
-    } else {
-        format!("{secs} s")
+        return std::format!("{} h {} min {} s", hours, minutes, secs);
     }
+    if minutes > 0 {
+        return std::format!("{} min {} s", minutes, secs);
+    }
+    std::format!("{} s", secs)
 }
 
 fn build_samples_csv(activities: &[ExportActivity]) -> String {
@@ -435,10 +421,7 @@ pub fn export_activities_csv_to_paths(
     samples.sort_by_key(|a| a.timestamp);
 
     write_csv_with_bom(&samples_out, &build_samples_csv(&samples))?;
-    write_csv_with_bom(
-        &aggregated_out,
-        &build_aggregated_csv(&payload.aggregated),
-    )?;
+    write_csv_with_bom(&aggregated_out, &build_aggregated_csv(&payload.aggregated))?;
 
     Ok(ExportCsvResultDto {
         samples_path: samples_out.to_string_lossy().to_string(),

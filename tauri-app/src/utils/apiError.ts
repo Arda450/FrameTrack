@@ -48,6 +48,10 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
       return "Kein aktives Fenster erkannt.";
     case "WINDOW_TITLE_EMPTY":
       return "Fenstertitel war leer.";
+    case "INVALID_PROJECT_NAME":
+      return "Bitte einen gültigen Projektnamen eingeben (max. 120 Zeichen).";
+    case "PROJECT_NOT_FOUND":
+      return "Projekt wurde nicht gefunden.";
     case "JSON_SERIALIZE_FAILED":
       return "Export konnte nicht erstellt werden.";
     default:

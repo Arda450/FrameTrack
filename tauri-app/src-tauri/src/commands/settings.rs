@@ -4,8 +4,11 @@ use tauri::State;
 
 use crate::commands::tracking::stop_tracking_internal;
 use crate::error::ApiError;
-use rustime_db::{count_activities, count_projects, delete_all_activities, delete_all_projects};
-use rustime_tracking::TrackingState;
+use frametrack_db::{
+    count_activities, count_projects, delete_all_activities, delete_all_projects,
+    ensure_export_directory,
+};
+use frametrack_tracking::TrackingState;
 
 /// Zähler für die UI (Export-Buttons, Settings-Panel); serialisierbar als JSON.
 #[derive(serde::Serialize)]
@@ -29,6 +32,13 @@ pub fn get_app_stats(state: State<TrackingState>) -> Result<AppStats, ApiError> 
         activity_count,
         project_count,
     })
+}
+
+/// Standardordner für Exporte (`Dokumente/frametrack-exports`); wird bei Bedarf angelegt.
+#[tauri::command]
+pub fn get_export_directory() -> Result<String, ApiError> {
+    let dir = ensure_export_directory().map_err(ApiError::from)?;
+    Ok(dir.to_string_lossy().into_owned())
 }
 
 /// Löscht alle Aktivitäten; gibt die Anzahl gelöschter Zeilen zurück.

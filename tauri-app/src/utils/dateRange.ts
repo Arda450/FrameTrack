@@ -39,12 +39,26 @@ export function formatIsoDate(iso: string): string {
 export function formatIsoDateLong(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   const date = new Date(y, m - 1, d);
-  const weekday = date.toLocaleDateString(undefined, { weekday: "long" });
+  const weekday = date.toLocaleDateString("de-CH", { weekday: "long" });
   return `${weekday}, ${formatIsoDate(iso)}`;
 }
 
 export function formatTimeFromTs(ts: number): string {
   return new Date(ts * 1000).toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function formatTimestampDate(ts: number): string {
+  return new Date(ts * 1000).toLocaleDateString("de-CH");
+}
+
+export function formatTimestampDateTime(ts: number): string {
+  return new Date(ts * 1000).toLocaleString("de-CH", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });

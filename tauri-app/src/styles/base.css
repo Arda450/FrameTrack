@@ -1,6 +1,6 @@
 /**
  * base.css – Globale Basis-Styles
- * Komponenten: App.tsx (indirekt), Icon.tsx (.appIcon), App-Logo <img>
+ * Komponenten: App.tsx (indirekt), shared/AppIcon.tsx (.appIcon), App-Logo <img>
  */
 
 /* --- Reset / Seitenhintergrund --- */
@@ -29,7 +29,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* --- Icon.tsx (lucide über AppIcon) --- */
+/* --- AppIcon (lucide über AppIcon) --- */
 .appIcon {
   flex-shrink: 0;
   display: block;

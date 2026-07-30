@@ -7,11 +7,11 @@ use tauri::State;
 use crate::commands::tracking::stop_tracking_internal;
 use crate::dto::project::ProjectDto;
 use crate::error::ApiError;
-use rustime_db::{
+use frametrack_db::{
     create_project as create_project_db, delete_project as delete_project_db, get_project_by_id,
-    list_projects,
+    list_projects, rename_project as rename_project_db,
 };
-use rustime_tracking::{current_timestamp, TrackingState};
+use frametrack_tracking::{current_timestamp, TrackingState};
 
 /// Legt ein Projekt nur mit Namen an (ohne File-Explorer) und setzt es als aktiv.
 #[tauri::command]
@@ -151,4 +151,54 @@ pub fn delete_project(state: State<TrackingState>, project_id: i64) -> Result<()
     }
 
     Ok(())
+}
+
+fn validate_project_name(name: &str) -> Result<String, ApiError> {
+    let trimmed = name.trim().to_string();
+    if trimmed.is_empty() {
+        return Err(ApiError::new(
+            "INVALID_PROJECT_NAME",
+            "Projektname darf nicht leer sein",
+        ));
+    }
+    if trimmed.len() > 120 {
+        return Err(ApiError::new(
+            "INVALID_PROJECT_NAME",
+            "Projektname ist zu lang (max. 120 Zeichen)",
+        ));
+    }
+    Ok(trimmed)
+}
+
+/// Benennt ein bestehendes Projekt um und aktualisiert ggf. den Namen im `TrackingState`.
+#[tauri::command]
+pub fn rename_project(
+    state: State<TrackingState>,
+    project_id: i64,
+    name: String,
+) -> Result<ProjectDto, ApiError> {
+    let trimmed = validate_project_name(&name)?;
+
+    let db_conn = state
+        .db
+        .lock()
+        .map_err(|_| ApiError::new("DB_LOCK_FAILED", "Datenbank-Lock fehlgeschlagen"))?;
+
+    let project = rename_project_db(&db_conn, project_id, &trimmed)
+        .map_err(ApiError::from)?
+        .ok_or_else(|| ApiError::new("PROJECT_NOT_FOUND", "Projekt nicht gefunden"))?;
+
+    drop(db_conn);
+
+    if let Ok(mut active) = state.active_project.lock() {
+        if active.as_ref().map(|(id, _)| *id) == Some(project_id) {
+            *active = Some((project.id, project.name.clone()));
+        }
+    }
+
+    Ok(ProjectDto {
+        id: project.id,
+        name: project.name,
+        path: project.path,
+    })
 }

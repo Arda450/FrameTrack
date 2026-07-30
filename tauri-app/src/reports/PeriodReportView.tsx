@@ -1,4 +1,6 @@
-import { invoke } from "@tauri-apps/api/core";
+import { getDailyReport, getWeeklyReport } from "../api/reports";
+import { getProjects } from "../api/projects";
+import { getByProjectForRange } from "../api/stats";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { DailyReport, DwellSegment, WeeklyReport } from "../types";
@@ -6,15 +8,14 @@ import {
   clampIsoDateToToday,
   dateInputToFromTs,
   dateInputToToTs,
-  formatIsoDateLong,
   todayIsoDate,
 } from "../utils/dateRange";
+import { buildProjectColorMap } from "../utils/chartColors";
 import { useReportLoad } from "../hooks/useReportLoad";
-import { REPORT_DWELL_OPTS, REPORT_ESTIMATION_HINT } from "./reportConfig";
+import { REPORT_DWELL_OPTS } from "./reportConfig";
 import { ReportBody } from "./ReportBody";
-import { ReportBarList } from "./ReportBarList";
 import ProjectBarChart from "../components/charts/ProjectBarChart";
-import { AppIcon } from "../components/Icon";
+import { AppIcon } from "../components/shared/AppIcon";
 import {
   PERIOD_KIND_CONFIG,
   buildDailyKpis,
@@ -35,15 +36,15 @@ import {
 function ByProjectSection({
   fromTs,
   toTs,
-  projectName,
   title,
   hint,
+  projectColorByName,
 }: {
   fromTs: number;
   toTs: number;
-  projectName: string;
   title: string;
   hint: string;
+  projectColorByName: ReadonlyMap<string, string>;
 }) {
   const [data, setData] = useState<DwellSegment[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +52,7 @@ function ByProjectSection({
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    invoke<DwellSegment[]>("get_by_project_for_range", {
+    getByProjectForRange({
       fromTs,
       toTs,
       ...REPORT_DWELL_OPTS,
@@ -88,8 +89,13 @@ function ByProjectSection({
     <div className="periodReportProjects">
       <h4 className="periodReportChartTitle">{title}</h4>
       <p className="periodReportChartHint">{hint}</p>
-      <div className="periodReportChartPane periodReportChartPaneProjects">
-        <ProjectBarChart items={data} highlightName={projectName} />
+      <div className="periodReportBarChart">
+        <ProjectBarChart
+          items={data}
+          colorByName={projectColorByName}
+          yAxisWidth={168}
+          emptyHint="Keine Projektzeit für diesen Zeitraum."
+        />
       </div>
     </div>
   );
@@ -97,47 +103,33 @@ function ByProjectSection({
 
 function buildDailyExtraSections(
   _report: DailyReport,
-  ctx: { projectName: string; fromTs: number; toTs: number },
+  ctx: { fromTs: number; toTs: number },
+  projectColorByName: ReadonlyMap<string, string>,
 ) {
-  // "Zeit pro Projekt" wird jetzt lazy geladen
   return (
     <ByProjectSection
       fromTs={ctx.fromTs}
       toTs={ctx.toTs}
-      projectName={ctx.projectName}
       title="Zeit pro Projekt (gesamter Tag)"
       hint="Alle Projekte an diesem Tag."
+      projectColorByName={projectColorByName}
     />
   );
 }
 
 function buildWeeklyExtraSections(
-  report: WeeklyReport,
-  ctx: { projectName: string; fromTs: number; toTs: number },
+  _report: WeeklyReport,
+  ctx: { fromTs: number; toTs: number },
+  projectColorByName: ReadonlyMap<string, string>,
 ) {
-  const byDaySorted = [...report.by_day].sort((a, b) => b.value - a.value);
   return (
-    <>
-      {byDaySorted.length > 0 && (
-        <div className="periodReportProjects">
-          <h4 className="periodReportChartTitle">
-            Aktivität pro Tag (dieses Projekt)
-          </h4>
-          <ReportBarList
-            items={byDaySorted}
-            formatLabel={(iso) => formatIsoDateLong(iso)}
-          />
-        </div>
-      )}
-      {/* "Zeit pro Projekt" wird jetzt lazy geladen */}
-      <ByProjectSection
-        fromTs={ctx.fromTs}
-        toTs={ctx.toTs}
-        projectName={ctx.projectName}
-        title="Zeit pro Projekt (gesamte Woche)"
-        hint="Alle Projekte in dieser Woche."
-      />
-    </>
+    <ByProjectSection
+      fromTs={ctx.fromTs}
+      toTs={ctx.toTs}
+      title="Zeit pro Projekt (gesamte Woche)"
+      hint="Alle Projekte in dieser Woche."
+      projectColorByName={projectColorByName}
+    />
   );
 }
 
@@ -154,6 +146,25 @@ function PeriodReportView({
 }: PeriodReportViewInternalProps) {
   const kind = PERIOD_KIND_CONFIG[mode];
   const [anchor, setAnchor] = useState(todayIsoDate());
+  const [projectColorByName, setProjectColorByName] = useState(
+    () => new Map<string, string>(),
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    getProjects()
+      .then((projects) => {
+        if (!cancelled) {
+          setProjectColorByName(buildProjectColorMap(projects));
+        }
+      })
+      .catch((e) => {
+        console.error("get_projects failed in PeriodReportView", e);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dwellRevision, projectId]);
 
   const navState =
     mode === "daily"
@@ -165,13 +176,13 @@ function PeriodReportView({
   const load = useCallback(async () => {
     if (mode === "daily") {
       const daily = createDailyNavState(anchor);
-      return invoke<DailyReport>(kind.invokeCommand, {
+      return getDailyReport({
         ...daily.invokeArgs(projectId, anchor),
         ...REPORT_DWELL_OPTS,
       });
     }
     const weekly = createWeeklyNavState(anchor);
-    return invoke<WeeklyReport>(kind.invokeCommand, {
+    return getWeeklyReport({
       ...weekly.invokeArgs(
         projectId,
         anchor,
@@ -180,7 +191,7 @@ function PeriodReportView({
       ),
       ...REPORT_DWELL_OPTS,
     });
-  }, [mode, projectId, anchor, kind.invokeCommand]);
+  }, [mode, projectId, anchor]);
 
   const {
     data: report,
@@ -235,67 +246,71 @@ function PeriodReportView({
     if (!report || isEmpty) return null;
     const fromTs = dateInputToFromTs(navState.rangeStart);
     const toTs = dateInputToToTs(navState.rangeEnd);
-    const ctx = { projectName, fromTs, toTs };
+    const ctx = { fromTs, toTs };
     if (mode === "daily") {
-      return buildDailyExtraSections(report as DailyReport, ctx);
+      return buildDailyExtraSections(
+        report as DailyReport,
+        ctx,
+        projectColorByName,
+      );
     }
-    return buildWeeklyExtraSections(report as WeeklyReport, ctx);
+    return buildWeeklyExtraSections(
+      report as WeeklyReport,
+      ctx,
+      projectColorByName,
+    );
   }, [
     report,
     mode,
-    projectName,
     isEmpty,
     navState.rangeStart,
     navState.rangeEnd,
+    projectColorByName,
   ]);
 
   const { nav } = navState;
 
   return (
     <div className="periodReport">
-      <div className="periodReportNav">
-        <button
-          type="button"
-          className="periodReportNavBtn"
-          onClick={() => setAnchor((d) => nav.stepPrev(d))}
-          aria-label={nav.prevAria}
-        >
-          <AppIcon icon={ChevronLeft} size={18} />
-        </button>
-        <label className="periodReportDateField">
-          <span className="periodReportDateLabel">{nav.dateFieldLabel}</span>
-          <input
-            type="date"
-            className="appDateInput"
-            value={nav.dateValue}
-            max={nav.maxDate}
-            onChange={(e) => setAnchor(clampIsoDateToToday(e.target.value))}
-          />
-        </label>
-        <button
-          type="button"
-          className="periodReportNavBtn"
-          onClick={() => setAnchor((d) => nav.stepNext(d))}
-          disabled={!nav.canGoForward}
-          aria-label={nav.nextAria}
-        >
-          <AppIcon icon={ChevronRight} size={18} />
-        </button>
-        <button
-          type="button"
-          className="periodReportTodayBtn"
-          onClick={() => setAnchor(nav.jumpToCurrent())}
-          disabled={nav.atCurrentPeriod}
-        >
-          {nav.currentPeriodLabel}
-        </button>
+      <div className="periodReportToolbar">
+        <div className="periodReportToolbarNav">
+          <button
+            type="button"
+            className="periodReportNavBtn"
+            onClick={() => setAnchor((d) => nav.stepPrev(d))}
+            aria-label={nav.prevAria}
+          >
+            <AppIcon icon={ChevronLeft} size={18} />
+          </button>
+          <label className="periodReportDateField">
+            <span className="periodReportDateLabel">{nav.dateFieldLabel}</span>
+            <input
+              type="date"
+              className="appDateInput"
+              value={nav.dateValue}
+              max={nav.maxDate}
+              onChange={(e) => setAnchor(clampIsoDateToToday(e.target.value))}
+            />
+          </label>
+          <button
+            type="button"
+            className="periodReportNavBtn"
+            onClick={() => setAnchor((d) => nav.stepNext(d))}
+            disabled={!nav.canGoForward}
+            aria-label={nav.nextAria}
+          >
+            <AppIcon icon={ChevronRight} size={18} />
+          </button>
+          <button
+            type="button"
+            className="periodReportTodayBtn"
+            onClick={() => setAnchor(nav.jumpToCurrent())}
+            disabled={nav.atCurrentPeriod}
+          >
+            {nav.currentPeriodLabel}
+          </button>
+        </div>
       </div>
-
-      <p className="periodReportSubtitle">
-        {navState.subtitle} · {projectName}
-      </p>
-
-      <p className="periodReportEstimationHint">{REPORT_ESTIMATION_HINT}</p>
 
       {loading && !report && (
         <p className="periodReportMuted">{kind.loadingMessage}</p>
@@ -317,7 +332,9 @@ function PeriodReportView({
           timelineBucketSeconds={kind.timelineBucketSeconds}
           trimLeadingEmptyBuckets={kind.trimLeadingEmptyBuckets}
           kpis={kpis}
-          reportSubtitle={navState.reportSubtitle(projectName)}
+          reportMode={mode}
+          periodLabel={navState.subtitle}
+          projectName={projectName}
           labels={kind.labels}
           extraSections={extraSections}
           exportArgs={exportArgs}

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "tauri-app",
+  "productName": "FrameTrack",
   "version": "0.1.0",
-  "identifier": "com.a.tauri-app",
+  "identifier": "com.frametrack.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "tauri-app",
+        "title": "FrameTrack",
         "width": 1100,
         "height": 700,
         "minWidth": 700,

@@ -4,6 +4,8 @@ import type { ChartLegendEntry } from "../../utils/chartLegend";
 type Props = {
   entries: ChartLegendEntry[];
   viewLabel?: string;
+  /** Kompakte Darstellung ohne Rahmen, einspaltig – für Übersicht und Berichte. */
+  variant?: "default" | "compact";
 };
 
 function truncateLabel(name: string, maxLen = 36): string {
@@ -11,13 +13,21 @@ function truncateLabel(name: string, maxLen = 36): string {
   return `${name.slice(0, maxLen - 1)}…`;
 }
 
-function ChartLegendInner({ entries, viewLabel }: Props) {
+function ChartLegendInner({ entries, viewLabel, variant = "default" }: Props) {
   if (entries.length === 0) {
     return null;
   }
 
   return (
-    <aside className="chartLegend" aria-label="Kategorien">
+    <aside
+      className={[
+        "chartLegend",
+        variant === "compact" ? "chartLegendCompact" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      aria-label="Kategorien"
+    >
       {viewLabel && <p className="chartLegendHint">{viewLabel}</p>}
       <ul className="chartLegendList">
         {entries.map((entry) => (

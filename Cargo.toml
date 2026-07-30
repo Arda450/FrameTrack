@@ -2,9 +2,9 @@
 resolver = "2"
 members = [
     "tauri-app/src-tauri",
-    "crates/rustime-core",
-    "crates/rustime-tracking",
-    "crates/rustime-db",
+    "crates/frametrack-core",
+    "crates/frametrack-tracking",
+    "crates/frametrack-db",
     "tools/seed-database",
 ]
 
