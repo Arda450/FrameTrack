@@ -25,7 +25,7 @@ function readChartCssColor(index: number): string | null {
   return raw || null;
 }
 
-/** Farbe für Index – identisch zur Sidebar-Projektreihenfolge. */
+/** Farbe für Index - identisch zur Sidebar-Projektreihenfolge. */
 export function colorForCategoryIndex(index: number): string {
   return (
     readChartCssColor(index) ??

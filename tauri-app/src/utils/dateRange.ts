@@ -96,7 +96,7 @@ export function addWeeks(isoDate: string, delta: number): string {
   return addDaysIso(isoDate, delta * 7);
 }
 
-/** ISO-Kalenderwoche (1–53) aus einem Datum. */
+/** ISO-Kalenderwoche (1-53) aus einem Datum. */
 export function isoWeekNumber(isoDate: string): number {
   const start = weekStartIso(isoDate);
   const [y, m, d] = start.split("-").map(Number);
@@ -115,13 +115,13 @@ export function clampWeekEndToToday(weekEnd: string): string {
 }
 
 export function formatWeekRange(weekStart: string, weekEnd: string): string {
-  return `${formatIsoDate(weekStart)} – ${formatIsoDate(weekEnd)}`;
+  return `${formatIsoDate(weekStart)} - ${formatIsoDate(weekEnd)}`;
 }
 
 export function formatWeekLabel(anchorIso: string): string {
   const start = weekStartIso(anchorIso);
   const end = weekEndIso(anchorIso);
-  // Ganze Kalenderwoche Mo–So anzeigen (konsistent zum Zeitverlauf).
+  // Ganze Kalenderwoche Mo-So anzeigen (konsistent zum Zeitverlauf).
   return `KW ${isoWeekNumber(start)} · ${formatWeekRange(start, end)}`;
 }
 

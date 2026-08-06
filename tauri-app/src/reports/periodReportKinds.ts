@@ -63,7 +63,7 @@ function buildLabels(
     activityTypePieLegend: `Anteil ${an}`,
     activityTypePieEmpty: `Keine Tätigkeitsdaten für ${mode === "daily" ? "diesen Tag" : "diese Woche"}.`,
     timelineTitle:
-      mode === "daily" ? "Zeitverlauf (00:00–24:00)" : "Aktivität pro Tag",
+      mode === "daily" ? "Zeitverlauf (00:00-24:00)" : "Aktivität pro Tag",
     timelineHint,
     timelineLegend: mode === "daily" ? "Summe an diesem Tag" : "Summe pro Tag",
     timelineEmpty:
@@ -98,11 +98,11 @@ export const PERIOD_KIND_CONFIG: Record<
     loadErrorMessage: "Wochenbericht konnte nicht geladen werden.",
     loadingMessage: "Lade Wochenbericht…",
     timelineBucketSeconds: WEEKLY_TIMELINE_BUCKET_SECONDS,
-    // Immer alle 7 Tage (Mo–So) zeigen, auch führende/leere Tage.
+    // Immer alle 7 Tage (Mo-So) zeigen, auch führende/leere Tage.
     trimLeadingEmptyBuckets: false,
     labels: buildLabels(
       "weekly",
-      "Geschätzte aktive Zeit je Kalendertag (Mo–So).",
+      "Geschätzte aktive Zeit je Kalendertag (Mo-So).",
     ),
   },
 };
@@ -112,9 +112,9 @@ export function periodEmptyMessage(
   projectName: string,
 ): string {
   if (mode === "daily") {
-    return `Für diesen Tag liegen keine Aktivitäten für das Projekt «${projectName}» vor.`;
+    return `Für diesen Tag liegen keine Aktivitäten für das Projekt "${projectName}" vor.`;
   }
-  return `Für diese Woche liegen keine Aktivitäten für das Projekt «${projectName}» vor.`;
+  return `Für diese Woche liegen keine Aktivitäten für das Projekt "${projectName}" vor.`;
 }
 
 function topCategoryShare(
@@ -144,7 +144,7 @@ export function buildDailyNarrative(
   if (!top) {
     return `Ca. ${active} aktiv gearbeitet.`;
   }
-  return `Ca. ${active} aktiv gearbeitet – Schwerpunkt: ${top.name} (${top.pct} %).`;
+  return `Ca. ${active} aktiv gearbeitet - Schwerpunkt: ${top.name} (${top.pct} %).`;
 }
 
 export function buildWeeklyNarrative(
@@ -159,7 +159,7 @@ export function buildWeeklyNarrative(
   const top = topCategoryShare(report);
   let text = `Ca. ${active} aktiv gearbeitet`;
   if (top) {
-    text += ` – Schwerpunkt: ${top.name} (${top.pct} %)`;
+    text += ` - Schwerpunkt: ${top.name} (${top.pct} %)`;
   }
   const busiest = report.by_day.reduce(
     (best, day) => (day.value > best.value ? day : best),
@@ -182,7 +182,7 @@ export function buildDailyKpis(report: DailyReport): ReportKpi[] {
     {
       value:
         report.first_activity_ts != null && report.last_activity_ts != null
-          ? `${formatTimeFromTs(report.first_activity_ts)} – ${formatTimeFromTs(report.last_activity_ts)}`
+          ? `${formatTimeFromTs(report.first_activity_ts)} - ${formatTimeFromTs(report.last_activity_ts)}`
           : "—",
       label: "Erfassungsfenster",
     },
@@ -254,7 +254,7 @@ export function createDailyNavState(anchor: string) {
 export function createWeeklyNavState(anchor: string) {
   const today = todayIsoDate();
   const weekStart = weekStartIso(anchor);
-  // Ganze Woche Mo–So (nicht auf heute begrenzt), damit der Zeitverlauf alle 7 Tage zeigt.
+  // Ganze Woche Mo-So (nicht auf heute begrenzt), damit der Zeitverlauf alle 7 Tage zeigt.
   const weekEnd = weekEndIso(anchor);
   return {
     rangeStart: weekStart,

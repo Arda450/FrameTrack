@@ -13,18 +13,18 @@ export type ToastTone = "success" | "error";
 export type ToastItem = {
   id: string;
   tone: ToastTone;
-  message: string;
-  detail?: string;
+  message: ReactNode;
+  detail?: ReactNode;
 };
 
 type ShowToastOptions = {
-  detail?: string;
+  detail?: ReactNode;
   durationMs?: number;
 };
 
 type ToastContextValue = {
-  success: (message: string, options?: ShowToastOptions) => void;
-  error: (message: string, options?: ShowToastOptions) => void;
+  success: (message: ReactNode, options?: ShowToastOptions) => void;
+  error: (message: ReactNode, options?: ShowToastOptions) => void;
   dismiss: (id: string) => void;
 };
 
@@ -44,7 +44,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const push = useCallback(
-    (tone: ToastTone, message: string, options?: ShowToastOptions) => {
+    (tone: ToastTone, message: ReactNode, options?: ShowToastOptions) => {
       const id = createId();
       const durationMs = options?.durationMs ?? DEFAULT_DURATION_MS;
       setToasts((current) => [
@@ -80,7 +80,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 export function useToast(): ToastContextValue {
   const ctx = useContext(ToastContext);
   if (!ctx) {
-    throw new Error("useToast muss innerhalb von ToastProvider verwendet werden.");
+    throw new Error(
+      "useToast muss innerhalb von ToastProvider verwendet werden.",
+    );
   }
   return ctx;
 }

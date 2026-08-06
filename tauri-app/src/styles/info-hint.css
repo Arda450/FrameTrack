@@ -1,0 +1,101 @@
+/**
+ * info-hint.css - InfoHint.tsx (kompakte Hilfe per Hover/Fokus)
+ */
+
+.infoHint {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.infoHintTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: help;
+  transition: var(--hover-transition);
+}
+
+.infoHintTrigger:hover,
+.infoHintTrigger:focus-visible {
+  color: var(--text);
+  border-color: var(--border);
+  filter: var(--hover-filter);
+  outline: none;
+}
+
+.infoHintBubble {
+  position: fixed;
+  z-index: 10000;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 48px));
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 12%, transparent);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.infoHintBubble--open {
+  opacity: 1;
+}
+
+.chartModeSwitchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.chartLegendHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.chartLegendHeader .chartLegendHint {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.timeSeriesChartToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0 0 6px;
+  min-height: 22px;
+}
+
+.createProjectCharCount {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+.createProjectCharCountWarn {
+  color: color-mix(in srgb, var(--accent) 75%, var(--text));
+}

@@ -1,4 +1,4 @@
-// VEREINFACHT – TrackingState-Muster wie in frametrack-tracking
+// VEREINFACHT - TrackingState-Muster wie in frametrack-tracking
 // Nicht als eigenes Crate gebaut.
 
 use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
@@ -7,7 +7,7 @@ use std::sync::{atomic::{AtomicBool, Ordering}, Arc, Mutex};
 pub struct TrackingState {
     /// Thread-sicherer Schalter: läuft der Polling-Loop?
     pub is_running: Arc<AtomicBool>,
-    /// SQLite – nur ein Thread darf gleichzeitig zugreifen
+    /// SQLite - nur ein Thread darf gleichzeitig zugreifen
     pub db: Arc<Mutex<()>>, // () statt Connection: nur Demo
     /// Welches Projekt für Inserts? None = noch keins gewählt
     pub active_project: Arc<Mutex<Option<(i64, String)>>>,

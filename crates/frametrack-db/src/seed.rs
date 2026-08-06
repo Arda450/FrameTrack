@@ -30,7 +30,7 @@ const FRAMETRACK_TITLES: &[&str] = &[
 
 const MPP_TITLES: &[&str] = &[
     "Major_Project_Proposal.pdf - MPP - Visual Studio Code",
-    "Notion – Major Project",
+    "Notion - Major Project",
 ];
 
 const OTHER_TITLES: &[&str] = &[

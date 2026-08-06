@@ -1,4 +1,4 @@
-// VEREINFACHT – Tauri-Command-Muster
+// VEREINFACHT - Tauri-Command-Muster
 // Echte Commands: tauri-app/src-tauri/src/commands/*.rs
 
 // use tauri::State;

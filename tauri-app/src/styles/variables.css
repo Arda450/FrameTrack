@@ -1,5 +1,5 @@
 /**
- * variables.css – Globale Design-Tokens (keine Komponente)
+ * variables.css - Globale Design-Tokens (keine Komponente)
  * Nutzung: var(--…) in allen Stylesheets; Theme-Umschaltung via [data-theme="light"] auf <html>.
  * Gesetzt in: App.tsx (localStorage „theme“)
  */
@@ -19,6 +19,10 @@
   --muted: #a1a1a1;
   --radius: 8px;
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --hover-transition:
+    filter 120ms ease, border-color 120ms ease, background-color 120ms ease,
+    color 120ms ease;
+  --hover-filter: brightness(1.08);
   --accent: #4a9;
   --danger: #e54;
   --warning: #f80;

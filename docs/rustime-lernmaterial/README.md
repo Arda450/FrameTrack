@@ -1,4 +1,4 @@
-# frametrack – Lernmaterial (Konzepte & State)
+# frametrack - Lernmaterial (Konzepte & State)
 
 Dieser Ordner ist **nur Dokumentation**. Er gehört nicht zur laufenden App, wird nicht gebaut und kann beliebig gelesen oder ergänzt werden.
 

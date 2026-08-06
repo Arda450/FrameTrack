@@ -31,3 +31,4 @@ frametrack-tracking = { path = "../../crates/frametrack-tracking" }
 frametrack-db = { path = "../../crates/frametrack-db" }
 rusqlite.workspace = true
 tauri-plugin-dialog = "2.7.2"
+tauri-plugin-notification = "2.3.3"

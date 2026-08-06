@@ -63,7 +63,7 @@ pub struct DailyReportDto {
     pub timeline: Vec<CategoryTimeSeriesPointDto>,
 }
 
-/// Wochenbericht für ein Projekt (Kalenderwoche Mo–So).
+/// Wochenbericht für ein Projekt (Kalenderwoche Mo-So).
 #[derive(Serialize)]
 pub struct WeeklyReportDto {
     pub week_start: String,

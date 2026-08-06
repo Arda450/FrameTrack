@@ -21,10 +21,10 @@ pub use dwell::{
 pub use error::DbError;
 pub use project_repo::{
     count_projects, create_project, delete_all_projects, delete_project, get_project_by_id,
-    list_projects, rename_project, upsert_project, DbProject,
+    list_projects, project_exists, rename_project, upsert_project, DbProject,
 };
 pub use schema::{
     default_database_path, default_export_directory, ensure_export_directory, init_database,
-    open_database,
+    init_in_memory_database, open_database,
 };
 pub use seed::{seed_demo_data, SeedOptions, SeedReport, SeedTimeMode};

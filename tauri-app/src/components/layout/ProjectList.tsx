@@ -41,63 +41,63 @@ export function ProjectList({
       <div className="appSidebarProjectsGroup">
         <div className="appSidebarProjectList">
           {projects.map((project, index) => {
-          const isActive = activeProject?.id === project.id;
-          const isTrackingThis = isActive && isTracking;
-          const isSelected = selectedProjectIds.has(project.id);
-          const accent = colorForCategoryIndex(index);
+            const isActive = activeProject?.id === project.id;
+            const isTrackingThis = isActive && isTracking;
+            const isSelected = selectedProjectIds.has(project.id);
+            const accent = colorForCategoryIndex(index);
 
-          return (
-            <div
-              key={project.id}
-              className={[
-                "appSidebarProjectRow",
-                isActive ? "appSidebarProjectRowActive" : "",
-                isSelected ? "appSidebarProjectRowSelected" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <button
-                type="button"
-                className="appSidebarProjectButton"
-                onClick={() => onProjectClick(project.id)}
-                title={
-                  isEditing
-                    ? project.name
-                    : isTrackingThis
-                      ? `${project.name} – Tracking stoppen`
-                      : `${project.name} – Tracking starten`
-                }
-                aria-current={isActive ? "true" : undefined}
-                aria-pressed={isEditing ? isSelected : isTrackingThis}
+            return (
+              <div
+                key={project.id}
+                className={[
+                  "appSidebarProjectRow",
+                  isActive ? "appSidebarProjectRowActive" : "",
+                  isSelected ? "appSidebarProjectRowSelected" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
               >
-                {isEditing ? (
-                  <span className="appSidebarSelectionIcon">
-                    <AppIcon
-                      icon={isSelected ? CheckSquare2 : Square}
-                      size={18}
-                    />
-                  </span>
-                ) : (
-                  <span
-                    className="appSidebarProjectIcon"
-                    style={
-                      isTrackingThis
-                        ? undefined
-                        : { background: accent, borderColor: accent }
-                    }
-                  >
-                    <AppIcon
-                      icon={isTrackingThis ? CirclePause : CirclePlay}
-                      size={18}
-                    />
-                  </span>
-                )}
-                <span className="appSidebarProjectName">{project.name}</span>
-              </button>
-            </div>
-          );
-        })}
+                <button
+                  type="button"
+                  className="appSidebarProjectButton"
+                  onClick={() => onProjectClick(project.id)}
+                  title={
+                    isEditing
+                      ? project.name
+                      : isTrackingThis
+                        ? `${project.name} - Tracking stoppen`
+                        : `${project.name} - Tracking starten`
+                  }
+                  aria-current={isActive ? "true" : undefined}
+                  aria-pressed={isEditing ? isSelected : isTrackingThis}
+                >
+                  {isEditing ? (
+                    <span className="appSidebarSelectionIcon">
+                      <AppIcon
+                        icon={isSelected ? CheckSquare2 : Square}
+                        size={18}
+                      />
+                    </span>
+                  ) : (
+                    <span
+                      className="appSidebarProjectIcon"
+                      style={
+                        isTrackingThis
+                          ? undefined
+                          : { background: accent, borderColor: accent }
+                      }
+                    >
+                      <AppIcon
+                        icon={isTrackingThis ? CirclePause : CirclePlay}
+                        size={18}
+                      />
+                    </span>
+                  )}
+                  <span className="appSidebarProjectName">{project.name}</span>
+                </button>
+              </div>
+            );
+          })}
 
           {!isEditing && (
             <div className="appSidebarProjectRow appSidebarProjectRowAdd">
@@ -118,31 +118,31 @@ export function ProjectList({
 
       {isEditing && (
         <div className="appSidebarEditActions">
-        <button
-          type="button"
-          className="appSidebarCancelEditButton"
-          onClick={onCancelEdit}
-        >
-          Abbrechen
-        </button>
-        <button
-          type="button"
-          className="appSidebarRenameSelectedButton"
-          disabled={selectedProjectIds.size !== 1}
-          onClick={onRenameSelected}
-        >
-          <AppIcon icon={Pencil} size={14} />
-          Umbenennen
-        </button>
-        <button
-          type="button"
-          className="appSidebarDeleteSelectedButton"
-          disabled={selectedProjectIds.size === 0}
-          onClick={onDeleteSelected}
-        >
-          <AppIcon icon={Trash2} size={14} />
-          Löschen ({selectedProjectIds.size})
-        </button>
+          <button
+            type="button"
+            className="appSidebarCancelEditButton"
+            onClick={onCancelEdit}
+          >
+            Abbrechen
+          </button>
+          <button
+            type="button"
+            className="appSidebarRenameSelectedButton"
+            disabled={selectedProjectIds.size !== 1}
+            onClick={onRenameSelected}
+          >
+            <AppIcon icon={Pencil} size={14} />
+            Umbenennen
+          </button>
+          <button
+            type="button"
+            className="appSidebarDeleteSelectedButton"
+            disabled={selectedProjectIds.size === 0}
+            onClick={onDeleteSelected}
+          >
+            <AppIcon icon={Trash2} size={14} />
+            Löschen ({selectedProjectIds.size})
+          </button>
         </div>
       )}
     </>

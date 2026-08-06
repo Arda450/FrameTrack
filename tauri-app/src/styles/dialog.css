@@ -1,7 +1,7 @@
 /**
- * dialog.css – Dialoge
+ * dialog.css - Dialoge
  * ConfirmDialog.tsx (@base-ui/react/alert-dialog)
- * PanelDialog.tsx (@base-ui/react/dialog) – Projekte / Einstellungen
+ * PanelDialog.tsx (@base-ui/react/dialog) - Projekte / Einstellungen
  */
 
 .confirmDialogBackdrop,
@@ -64,11 +64,12 @@
   background: var(--surface);
   color: var(--muted);
   cursor: pointer;
+  transition: var(--hover-transition);
 }
 
 .panelDialogClose:hover {
   color: var(--text);
-  border-color: var(--accent);
+  filter: var(--hover-filter);
 }
 
 .panelDialogBody {
@@ -170,7 +171,9 @@
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 1101;
-  width: min(420px, calc(100vw - 48px));
+  width: min(480px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -180,6 +183,7 @@
   background: var(--surface);
   color: var(--text);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  overflow-wrap: anywhere;
 }
 
 .confirmDialogIntro {
@@ -198,6 +202,15 @@
   margin: 0;
   color: var(--muted);
   line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.dialogProjectName {
+  font-weight: 700;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .confirmDialogActions {
@@ -251,11 +264,11 @@
 }
 
 .createProjectDialog {
-  width: min(440px, calc(100vw - 48px));
+  width: min(480px, calc(100vw - 32px));
 }
 
 .createProjectDialog--compact {
-  width: min(340px, calc(100vw - 32px));
+  width: min(400px, calc(100vw - 32px));
 }
 
 .createProjectForm--compact {
@@ -302,6 +315,8 @@
   background: var(--surface-strong);
   color: var(--text);
   font: inherit;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .createProjectInput:focus {

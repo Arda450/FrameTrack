@@ -50,13 +50,13 @@ function buildDetailSections(stats: ProjectStats): DetailSection[] {
           label: "Erste Aktivität",
           value: stats.first_activity_ts
             ? formatTimestampDateTime(stats.first_activity_ts)
-            : "–",
+            : "-",
         },
         {
           label: "Letzte Aktivität",
           value: stats.last_activity_ts
             ? formatTimestampDateTime(stats.last_activity_ts)
-            : "–",
+            : "-",
         },
       ],
     },

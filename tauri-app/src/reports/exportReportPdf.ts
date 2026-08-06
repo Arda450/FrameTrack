@@ -68,7 +68,8 @@ function loadImage(dataUrl: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("Chart-Bild konnte nicht geladen werden."));
+    img.onerror = () =>
+      reject(new Error("Chart-Bild konnte nicht geladen werden."));
     img.src = dataUrl;
   });
 }
@@ -134,8 +135,12 @@ function addHeader(
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10.5);
-  doc.text(options.projectName, MARGIN, y);
-  y += 4.5;
+  const projectLines = doc.splitTextToSize(
+    `Projektname: ${options.projectName}`,
+    CONTENT_W,
+  );
+  doc.text(projectLines, MARGIN, y);
+  y += projectLines.length * 4.5;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
@@ -325,11 +330,7 @@ function addTableSection(
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     setTextColor(doc, COLOR.text);
-    doc.text(
-      formatDurationSeconds(item.value),
-      MARGIN + colNameW + 2,
-      y,
-    );
+    doc.text(formatDurationSeconds(item.value), MARGIN + colNameW + 2, y);
 
     setTextColor(doc, COLOR.muted);
     doc.text(`${pct} %`, MARGIN + colNameW + colDurW + 2, y);

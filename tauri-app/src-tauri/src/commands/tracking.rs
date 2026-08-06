@@ -3,7 +3,6 @@
 //! Der Polling-Loop läuft in einem Hintergrund-Thread. Persistenz nur in SQLite
 //! (keine unbegrenzte RAM-Liste). UI-Events (`new-activity`) nur bei Titelwechsel.
 
-use std::collections::HashMap;
 use std::sync::{atomic::Ordering, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -11,112 +10,52 @@ use std::time::Duration;
 use tauri::{AppHandle, Emitter, State};
 
 use crate::dto::activity::ActivityDto;
-use frametrack_core::{models::WindowActivity, ActivityType};
+use frametrack_core::models::WindowActivity;
 use frametrack_tracking::{
-    current_timestamp, try_get_active_window_title, ActiveWindowClassifier, TrackingError,
-    TrackingState,
+    current_timestamp, minute_bucket_start, try_get_active_window_title, ActiveWindowClassifier,
+    MinuteAccumulator, MinuteActivityKey, TrackingError, TrackingState, WindowAnalysis,
+    SAMPLE_INTERVAL_SECONDS,
 };
-
-const SAMPLE_INTERVAL_SECONDS: u64 = 2;
-const AGGREGATION_INTERVAL_SECONDS: u64 = 60;
-
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-struct MinuteKey {
-    project_id: i64,
-    project_name: String,
-    title: String,
-    activity_type: ActivityType,
-}
-
-#[derive(Debug)]
-struct MinuteAccumulator {
-    bucket_start: u64,
-    first_sample_ts: Option<u64>,
-    total_samples: u64,
-    sequence: u64,
-    counts: HashMap<MinuteKey, (u64, u64)>,
-}
-
-impl MinuteAccumulator {
-    fn new(timestamp: u64) -> Self {
-        Self {
-            bucket_start: minute_start(timestamp),
-            first_sample_ts: None,
-            total_samples: 0,
-            sequence: 0,
-            counts: HashMap::new(),
-        }
-    }
-
-    fn record(&mut self, key: MinuteKey, timestamp: u64) {
-        self.first_sample_ts.get_or_insert(timestamp);
-        self.total_samples = self.total_samples.saturating_add(1);
-        self.sequence = self.sequence.saturating_add(1);
-        let entry = self.counts.entry(key).or_insert((0, 0));
-        entry.0 = entry.0.saturating_add(1);
-        entry.1 = self.sequence;
-    }
-
-    fn reset(&mut self, timestamp: u64) {
-        self.bucket_start = minute_start(timestamp);
-        self.first_sample_ts = None;
-        self.total_samples = 0;
-        self.sequence = 0;
-        self.counts.clear();
-    }
-}
-
-fn minute_start(timestamp: u64) -> u64 {
-    (timestamp / AGGREGATION_INTERVAL_SECONDS) * AGGREGATION_INTERVAL_SECONDS
-}
 
 fn persist_dominant_minute(
     accumulator: &MinuteAccumulator,
     db: &Arc<Mutex<rusqlite::Connection>>,
     app: &AppHandle,
 ) {
-    let Some((dominant, _)) = accumulator
-        .counts
-        .iter()
-        .max_by(|(_, left), (_, right)| left.0.cmp(&right.0).then(left.1.cmp(&right.1)))
-    else {
+    let Some(dominant) = accumulator.dominant_minute() else {
         return;
     };
 
-    let duration_seconds = accumulator
-        .total_samples
-        .saturating_mul(SAMPLE_INTERVAL_SECONDS)
-        .min(AGGREGATION_INTERVAL_SECONDS);
-    if duration_seconds == 0 {
-        return;
-    }
-
-    let activity = WindowActivity {
-        title: dominant.title.clone(),
-        timestamp: accumulator
-            .first_sample_ts
-            .unwrap_or(accumulator.bucket_start),
-        activity_type: dominant.activity_type,
-    };
     let Ok(db_conn) = db.lock() else {
         eprintln!("DB lock error while persisting minute");
         return;
     };
+    if !frametrack_db::project_exists(&db_conn, dominant.key.project_id).unwrap_or(false) {
+        return;
+    }
+
+    let activity = WindowActivity {
+        title: dominant.key.title.clone(),
+        timestamp: dominant.timestamp,
+        activity_type: dominant.key.activity_type,
+        context_key: dominant.key.context_key.clone(),
+    };
     if let Err(error) = frametrack_db::insert_aggregated_activity_with_project(
         &db_conn,
         &activity,
-        dominant.project_id,
-        duration_seconds,
+        dominant.key.project_id,
+        dominant.duration_seconds,
     ) {
         eprintln!("DB insert error: {}", error);
         return;
     }
+    drop(db_conn);
 
     let dto = ActivityDto::from_parts(
         activity.title,
         activity.timestamp,
-        Some(dominant.project_id),
-        Some(dominant.project_name.clone()),
+        Some(dominant.key.project_id),
+        Some(dominant.key.project_name.clone()),
     );
     let _ = app.emit("new-activity", dto);
 }
@@ -129,6 +68,25 @@ pub fn start_tracking(state: State<TrackingState>, app: AppHandle) {
         return;
     }
 
+    if let Ok(mut active) = state.active_project.lock() {
+        if let Some((project_id, _)) = active.clone() {
+            let exists = state
+                .db
+                .lock()
+                .ok()
+                .and_then(|conn| frametrack_db::project_exists(&conn, project_id).ok())
+                .unwrap_or(false);
+            if !exists {
+                *active = None;
+                state.is_running.store(false, Ordering::SeqCst);
+                eprintln!(
+                    "Tracking nicht gestartet: Projekt #{project_id} existiert nicht mehr."
+                );
+                return;
+            }
+        }
+    }
+
     let run_id = state.session_id.fetch_add(1, Ordering::SeqCst) + 1;
     let is_running = Arc::clone(&state.is_running);
     let session_id = Arc::clone(&state.session_id);
@@ -138,12 +96,12 @@ pub fn start_tracking(state: State<TrackingState>, app: AppHandle) {
 
     thread::spawn(move || {
         let mut accumulator = MinuteAccumulator::new(current_timestamp());
-        let mut last_classification: Option<(String, ActivityType)> = None;
+        let mut last_classification: Option<(String, frametrack_core::ActivityType, String)> = None;
         let classifier = ActiveWindowClassifier::new();
 
         while is_running.load(Ordering::SeqCst) && session_id.load(Ordering::SeqCst) == run_id {
             let timestamp = current_timestamp();
-            if minute_start(timestamp) != accumulator.bucket_start {
+            if minute_bucket_start(timestamp) != accumulator.bucket_start() {
                 persist_dominant_minute(&accumulator, &db, &app_handle);
                 accumulator.reset(timestamp);
                 last_classification = None;
@@ -163,22 +121,34 @@ pub fn start_tracking(state: State<TrackingState>, app: AppHandle) {
             };
 
             if !title.is_empty() {
-                let activity_type = match &last_classification {
-                    Some((last_title, activity_type)) if last_title == &title => *activity_type,
+                let analysis = match &last_classification {
+                    Some((last_title, activity_type, context_key))
+                        if last_title == &title =>
+                    {
+                        WindowAnalysis {
+                            activity_type: *activity_type,
+                            category_key: context_key.clone(),
+                        }
+                    }
                     _ => {
-                        let activity_type = classifier.classify(&title);
-                        last_classification = Some((title.clone(), activity_type));
-                        activity_type
+                        let analysis = classifier.analyze(&title);
+                        last_classification = Some((
+                            title.clone(),
+                            analysis.activity_type,
+                            analysis.category_key.clone(),
+                        ));
+                        analysis
                     }
                 };
                 let proj = active_project.lock().ok().and_then(|g| g.clone());
                 if let Some((project_id, project_name)) = proj {
                     accumulator.record(
-                        MinuteKey {
+                        MinuteActivityKey {
                             project_id,
                             project_name,
                             title,
-                            activity_type,
+                            context_key: analysis.category_key,
+                            activity_type: analysis.activity_type,
                         },
                         timestamp,
                     );

@@ -58,11 +58,11 @@ Copy-Item testdata\frametrack-week.db $env:USERPROFILE\Documents\frametrack-data
 
 | Uhrzeit (lokal) | Projekt      | Fenster (Auszug)          |
 | --------------- | ------------ | ------------------------- |
-| 07:00–11:30     | frametrack   | VS Code, Terminal, GitHub |
-| 12:30–17:00     | frametrack   | VS Code, DailyReportView  |
-| 18:00–19:00     | mpp-docs     | MPP-PDF, Notion           |
-| 19:30–20:25     | nebenprojekt | YouTube, Discord, …       |
-| 20:30–22:00     | frametrack   | Abendsession              |
+| 07:00-11:30     | frametrack   | VS Code, Terminal, GitHub |
+| 12:30-17:00     | frametrack   | VS Code, DailyReportView  |
+| 18:00-19:00     | mpp-docs     | MPP-PDF, Notion           |
+| 19:30-20:25     | nebenprojekt | YouTube, Discord, …       |
+| 20:30-22:00     | frametrack   | Abendsession              |
 
 ## Zeitverlauf: Bucket-Grösse
 

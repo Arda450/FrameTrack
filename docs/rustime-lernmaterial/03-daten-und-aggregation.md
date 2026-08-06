@@ -29,7 +29,7 @@ Sample A (10:00:00) ──► Sample B (10:00:08)
 In frametrack: `max_segment_gap_seconds` oft **120** (2 Minuten Cap).
 
 ```rust
-// dwell.rs – vereinfachte Idee
+// dwell.rs - vereinfachte Idee
 let raw_delta = next.timestamp - start.timestamp;
 let delta = raw_delta.min(max_segment_gap_seconds);
 let end = start + delta;

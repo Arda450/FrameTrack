@@ -209,7 +209,7 @@ export function ActivitiesTable({
       {
         label: "Kontext",
         value: debouncedContext.trim()
-          ? `enthält «${debouncedContext.trim()}»`
+          ? `enthält "${debouncedContext.trim()}"`
           : "alle Fenstertitel",
       },
       {
@@ -217,7 +217,7 @@ export function ActivitiesTable({
         value:
           projectId != null
             ? projectName
-              ? `«${projectName}»`
+              ? projectName
               : "nur aktives Projekt"
             : "alle Projekte",
       },
@@ -312,7 +312,7 @@ export function ActivitiesTable({
           Filter und Sortierung gelten für alle Einträge in der Datenbank.
         </span>
         <span>
-          Auf den «Datum»-Button in der Tabelle klicken zum Umschalten.
+          Auf den Spaltenkopf Datum in der Tabelle tippen zum Umschalten.
         </span>
       </p>
       <p className="activitiesFilterStatus" aria-live="polite">

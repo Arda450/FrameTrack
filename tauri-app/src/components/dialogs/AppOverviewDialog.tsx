@@ -14,6 +14,11 @@ import ProjectBarChart from "../charts/ProjectBarChart";
 import ChartLegend from "../charts/ChartLegend";
 import TimeSeriesChart from "../charts/TimeSeriesChart";
 import { StatCardGrid } from "../shared/StatCardGrid";
+import { InfoHint } from "../shared/InfoHint";
+import {
+  ACTIVE_TIME_MEASUREMENT_HINT,
+  ACTIVE_TIME_MEASUREMENT_HINT_LONG,
+} from "../../reports/reportConfig";
 import { PanelDialog } from "./PanelDialog";
 
 type AppOverviewDialogProps = {
@@ -35,6 +40,9 @@ export function AppOverviewDialog({
     () => new Map<string, string>(),
   );
   const [chartMode, setChartMode] = useState<ChartMode>("bar");
+  const [focusedTimelineCategory, setFocusedTimelineCategory] = useState<
+    string | null
+  >(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -65,6 +73,10 @@ export function AppOverviewDialog({
       cancelled = true;
     };
   }, [open, dwellRevision]);
+
+  useEffect(() => {
+    setFocusedTimelineCategory(null);
+  }, [chartMode, stats?.timeline]);
 
   const categoryOrder = useMemo(
     () =>
@@ -99,8 +111,7 @@ export function AppOverviewDialog({
         <div>
           <h2>App-Statistik aller Projekte</h2>
           <p className="appOverviewSubtitle">
-            Geschätzte Gesamtwerte seit Beginn der Erfassung. Pro Minute wird
-            die überwiegend genutzte App berücksichtigt.
+            {ACTIVE_TIME_MEASUREMENT_HINT_LONG}
           </p>
         </div>
 
@@ -136,7 +147,7 @@ export function AppOverviewDialog({
               <div className="overviewInsights">
                 <span>
                   Aktivstes Projekt:{" "}
-                  <strong>{mostActiveProject?.name ?? "–"}</strong>
+                  <strong>{mostActiveProject?.name ?? "-"}</strong>
                 </span>
                 <span>
                   Erfasst seit:{" "}
@@ -145,7 +156,7 @@ export function AppOverviewDialog({
                       ? new Date(
                           stats.first_activity_ts * 1000,
                         ).toLocaleDateString("de-CH")
-                      : "–"}
+                      : "-"}
                   </strong>
                 </span>
                 <span>
@@ -157,34 +168,41 @@ export function AppOverviewDialog({
               </div>
             )}
 
-            <div
-              className="chartModeSwitch"
-              role="group"
-              aria-label="Darstellung der Gesamtstatistik"
-            >
-              <button
-                type="button"
-                className={chartMode === "bar" ? "active" : ""}
-                aria-pressed={chartMode === "bar"}
-                onClick={() => setChartMode("bar")}
+            <div className="chartModeSwitchRow">
+              <div
+                className="chartModeSwitch"
+                role="group"
+                aria-label="Darstellung der Gesamtstatistik"
               >
-                Projektvergleich
-              </button>
-              <button
-                type="button"
-                className={chartMode === "timeseries" ? "active" : ""}
-                aria-pressed={chartMode === "timeseries"}
-                onClick={() => setChartMode("timeseries")}
+                <button
+                  type="button"
+                  className={chartMode === "bar" ? "active" : ""}
+                  aria-pressed={chartMode === "bar"}
+                  onClick={() => setChartMode("bar")}
+                >
+                  Projektvergleich
+                </button>
+                <button
+                  type="button"
+                  className={chartMode === "timeseries" ? "active" : ""}
+                  aria-pressed={chartMode === "timeseries"}
+                  onClick={() => setChartMode("timeseries")}
+                >
+                  Verlauf (24 Stunden)
+                </button>
+              </div>
+              <InfoHint
+                label={
+                  chartMode === "bar"
+                    ? "Hilfe zum Projektvergleich"
+                    : "Hilfe zum Verlauf"
+                }
               >
-                Verlauf (24 Stunden)
-              </button>
+                {chartMode === "bar"
+                  ? `Erfasste Arbeitszeit je Projekt, sortiert nach Dauer. ${ACTIVE_TIME_MEASUREMENT_HINT}`
+                  : `Aktive Projektzeit pro ${formatBucketLabel(BUCKET_SECONDS)}-Fenster (letzte 24 Stunden). ${ACTIVE_TIME_MEASUREMENT_HINT}`}
+              </InfoHint>
             </div>
-
-            <p className="overviewChartHint">
-              {chartMode === "bar"
-                ? "Gesamte erfasste Arbeitszeit je Projekt, sortiert nach Dauer."
-                : `Aktive Projektzeit pro ${formatBucketLabel(BUCKET_SECONDS)}-Fenster.`}
-            </p>
 
             <div
               className={
@@ -216,6 +234,7 @@ export function AppOverviewDialog({
                     categoryOrder={categoryOrder}
                     bucketSeconds={BUCKET_SECONDS}
                     emptyHint="In den letzten 24 Stunden liegen keine Daten vor."
+                    focusedCategory={focusedTimelineCategory}
                   />
                 )}
               </div>
@@ -224,6 +243,8 @@ export function AppOverviewDialog({
                   entries={legendEntries}
                   viewLabel="Projektzeiten der letzten 24 Stunden"
                   variant="compact"
+                  selectedEntry={focusedTimelineCategory}
+                  onEntrySelect={setFocusedTimelineCategory}
                 />
               )}
             </div>

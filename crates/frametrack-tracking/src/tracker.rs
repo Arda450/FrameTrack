@@ -2,7 +2,9 @@
 // erzeugt zeitstempel
 
 use crate::TrackingError;
-use frametrack_core::{classify_activity_type_with_url, ActivityType};
+use frametrack_core::{
+    category_key_from_title_with_url, classify_activity_type_with_url, ActivityType,
+};
 use uiautomation::{
     types::{ControlType, Handle, TreeScope, UIProperty},
     variants::Variant,
@@ -10,10 +12,17 @@ use uiautomation::{
 };
 use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowTextW};
 
+/// Ergebnis einer Fenster-Analyse beim Tracking (URL wird nicht persistiert).
+#[derive(Debug, Clone)]
+pub struct WindowAnalysis {
+    pub activity_type: ActivityType,
+    pub category_key: String,
+}
+
 /// Klassifikator für den Tracking-Thread.
 ///
 /// Die UI-Automation-Instanz wird einmal pro Tracking-Lauf initialisiert. Eine
-/// aus der Adressleiste gelesene URL bleibt ausschliesslich in `classify`.
+/// aus der Adressleiste gelesene URL bleibt ausschliesslich in `analyze`.
 pub struct ActiveWindowClassifier {
     automation: Option<UIAutomation>,
 }
@@ -25,18 +34,30 @@ impl ActiveWindowClassifier {
         }
     }
 
+    pub fn analyze(&self, title: &str) -> WindowAnalysis {
+        let ephemeral_url = self.read_ephemeral_browser_url(title);
+        let activity_type =
+            classify_activity_type_with_url(title, ephemeral_url.as_deref());
+        let category_key =
+            category_key_from_title_with_url(title, ephemeral_url.as_deref());
+        WindowAnalysis {
+            activity_type,
+            category_key,
+        }
+    }
+
     pub fn classify(&self, title: &str) -> ActivityType {
+        self.analyze(title).activity_type
+    }
+
+    fn read_ephemeral_browser_url(&self, title: &str) -> Option<String> {
+        if !is_supported_browser_title(title) {
+            return None;
+        }
         let hwnd = unsafe { GetForegroundWindow() };
-        let ephemeral_url = if is_supported_browser_title(title) {
-            self.automation
-                .as_ref()
-                .and_then(|automation| try_read_browser_url(automation, hwnd))
-        } else {
-            None
-        };
-        let activity_type = classify_activity_type_with_url(title, ephemeral_url.as_deref());
-        drop(ephemeral_url);
-        activity_type
+        self.automation.as_ref().and_then(|automation| {
+            try_read_browser_url(automation, hwnd)
+        })
     }
 }
 

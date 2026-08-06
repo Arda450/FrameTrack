@@ -448,3 +448,70 @@ pub fn export_report_pdf_to_path(
 
     Ok(out_path.to_string_lossy().to_string())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use frametrack_db::ActivityWithProject;
+
+    fn sample_row(title: &str, timestamp: u64, duration_seconds: u64) -> ActivityWithProject {
+        ActivityWithProject {
+            title: title.to_string(),
+            timestamp,
+            project_id: Some(1),
+            project_name: Some("Testprojekt".to_string()),
+            duration_seconds,
+            activity_type: Some(ActivityType::Development),
+            context_key: Some("VS Code".to_string()),
+        }
+    }
+
+    #[test]
+    fn escape_csv_field_quotes_semicolons_and_newlines() {
+        assert_eq!(escape_csv_field("plain"), "plain");
+        assert_eq!(escape_csv_field("a;b"), "\"a;b\"");
+        assert_eq!(escape_csv_field("line\nbreak"), "\"line\nbreak\"");
+        assert_eq!(escape_csv_field("say \"hi\""), "\"say \"\"hi\"\"\"");
+    }
+
+    #[test]
+    fn build_payload_sets_format_version_and_activity_rows() {
+        let rows = vec![
+            sample_row("lib.rs - frametrack", 1_700_000_100, 60),
+            sample_row("README.md - frametrack", 1_700_000_200, 30),
+        ];
+        let req = ExportRequest::from_params(Some(1), None, None, None);
+        let payload = build_payload(rows, &req);
+
+        assert_eq!(payload.meta.format_version, 4);
+        assert_eq!(payload.meta.sample_count, 2);
+        assert_eq!(payload.activities.len(), 2);
+        assert_eq!(payload.activities[0].activity_type, "Entwicklung");
+        assert!(!payload.aggregated.by_project_category.is_empty());
+    }
+
+    #[test]
+    fn compute_aggregated_groups_same_context_for_one_project() {
+        let rows = vec![
+            sample_row("Page A - Example - Chrome", 1_000, 20),
+            sample_row("Page B - Example - Chrome", 1_020, 25),
+        ];
+        let filter = ActivitiesFilter {
+            project_id: Some(1),
+            from_ts: None,
+            to_ts: None,
+            context_query: None,
+        };
+
+        let aggregated = compute_aggregated(&rows, &filter);
+        let total: u64 = aggregated
+            .by_project_category
+            .iter()
+            .map(|row| row.active_seconds)
+            .sum();
+
+        assert_eq!(total, 45);
+        assert_eq!(aggregated.by_project.len(), 1);
+        assert_eq!(aggregated.by_project[0].active_seconds, 45);
+    }
+}

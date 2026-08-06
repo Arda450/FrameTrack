@@ -28,6 +28,7 @@ import {
 import { useActivityExport } from "../../hooks/useActivityExport";
 import { useProjectStats } from "../../hooks/useProjectStats";
 import { ProjectInfoPanel } from "./ProjectInfoPanel";
+import { InfoHint } from "../shared/InfoHint";
 
 type OverviewPanelProps = {
   isTracking: boolean;
@@ -49,6 +50,9 @@ function OverviewPanel({
 }: OverviewPanelProps) {
   const [chartView, setChartView] = useState<ChartView>("charts");
   const [chartMode, setChartMode] = useState<ChartMode>("pie");
+  const [focusedTimelineCategory, setFocusedTimelineCategory] = useState<
+    string | null
+  >(null);
   const [exportFilter, setExportFilter] = useState<TableExportFilter>({
     projectId: null,
     fromTs: null,
@@ -81,6 +85,10 @@ function OverviewPanel({
     if (!showReportExport) setReportExport(null);
   }, [showReportExport]);
 
+  useEffect(() => {
+    setFocusedTimelineCategory(null);
+  }, [chartMode, projectId]);
+
   const legendEntries = useMemo(() => {
     return buildChartLegendEntries(
       charts.categoryOrder,
@@ -103,7 +111,7 @@ function OverviewPanel({
   const tableProjectId = activeProject?.id ?? null;
 
   const noProjectHint =
-    "Wähle links ein Projekt oder lege «Neues Projekt» an. Tracking startet beim Klick auf ein Projekt.";
+    "Wähle links ein Projekt oder lege über Neues Projekt eines an. Tracking startet beim Klick auf ein Projekt.";
 
   return (
     <section className="overviewPanel">
@@ -203,34 +211,41 @@ function OverviewPanel({
             <ChartSkeleton />
           ) : (
             <>
-              <div
-                className="chartModeSwitch"
-                role="group"
-                aria-label="Darstellung der Zeitstatistik"
-              >
-                <button
-                  type="button"
-                  className={chartMode === "pie" ? "active" : ""}
-                  aria-pressed={chartMode === "pie"}
-                  onClick={() => setChartMode("pie")}
+              <div className="chartModeSwitchRow">
+                <div
+                  className="chartModeSwitch"
+                  role="group"
+                  aria-label="Darstellung der Zeitstatistik"
                 >
-                  Zeitverteilung
-                </button>
-                <button
-                  type="button"
-                  className={chartMode === "timeseries" ? "active" : ""}
-                  aria-pressed={chartMode === "timeseries"}
-                  onClick={() => setChartMode("timeseries")}
+                  <button
+                    type="button"
+                    className={chartMode === "pie" ? "active" : ""}
+                    aria-pressed={chartMode === "pie"}
+                    onClick={() => setChartMode("pie")}
+                  >
+                    Zeitverteilung
+                  </button>
+                  <button
+                    type="button"
+                    className={chartMode === "timeseries" ? "active" : ""}
+                    aria-pressed={chartMode === "timeseries"}
+                    onClick={() => setChartMode("timeseries")}
+                  >
+                    Zeitverlauf
+                  </button>
+                </div>
+                <InfoHint
+                  label={
+                    chartMode === "pie"
+                      ? "Hilfe zur Zeitverteilung"
+                      : "Hilfe zum Zeitverlauf"
+                  }
                 >
-                  Zeitverlauf
-                </button>
+                  {chartMode === "pie"
+                    ? `Zeigt die geschätzte Verweildauer je Anwendung im aktiven Projekt (letzte ${PROJECT_CHART_VISIBLE_HOURS} Stunden).`
+                    : `Zeigt die aktive Zeit pro ${formatBucketLabel(PROJECT_CHART_BUCKET_SECONDS)}-Fenster in den letzten ${PROJECT_CHART_VISIBLE_HOURS} Stunden.`}
+                </InfoHint>
               </div>
-
-              <p className="overviewChartHint">
-                {chartMode === "pie"
-                  ? `Geschätzte Verweildauer je Anwendung im aktiven Projekt (letzte ${PROJECT_CHART_VISIBLE_HOURS} Stunden).`
-                  : `Aktive Anwendungszeit pro ${formatBucketLabel(PROJECT_CHART_BUCKET_SECONDS)}-Fenster in den letzten ${PROJECT_CHART_VISIBLE_HOURS} Stunden.`}
-              </p>
 
               <div className="chartSectionLayout">
                 <ProjectInfoPanel
@@ -256,6 +271,7 @@ function OverviewPanel({
                         categoryOrder={charts.categoryOrder}
                         bucketSeconds={PROJECT_CHART_BUCKET_SECONDS}
                         emptyHint={chartEmptyHint}
+                        focusedCategory={focusedTimelineCategory}
                       />
                     )}
                   </div>
@@ -264,6 +280,16 @@ function OverviewPanel({
                     entries={legendEntries}
                     viewLabel={legendHint}
                     variant="compact"
+                    selectedEntry={
+                      chartMode === "timeseries"
+                        ? focusedTimelineCategory
+                        : undefined
+                    }
+                    onEntrySelect={
+                      chartMode === "timeseries"
+                        ? setFocusedTimelineCategory
+                        : undefined
+                    }
                   />
                 </div>
               </div>

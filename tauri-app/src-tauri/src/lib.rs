@@ -29,6 +29,7 @@ pub fn run() {
         // plugin initialisieren
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .manage(TrackingState::new(db))
         .invoke_handler(tauri::generate_handler![
             // commands registerieren, damit die frontend auf die commands zugreifen kann per invoke

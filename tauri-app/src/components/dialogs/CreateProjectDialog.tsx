@@ -1,56 +1,98 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
+
 import { Dialog } from "@base-ui/react/dialog";
+
 import { createProject } from "../../api/projects";
+import { MAX_PROJECT_NAME_LENGTH } from "../../constants/project";
 import { Project } from "../../types";
 import { apiErrorMessage } from "../../utils/apiError";
+import { toastProjectCreated } from "../../utils/toastProjectMessages";
 import { useToast } from "../toast/ToastContext";
 
 type CreateProjectDialogProps = {
   open: boolean;
+
   onOpenChange: (open: boolean) => void;
+
   onCreated: (project: Project) => void;
 };
 
 /**
+
  * Dialog zum Anlegen eines Projekts per Name (ohne File-Explorer).
+
  */
+
 export function CreateProjectDialog({
   open,
+
   onOpenChange,
+
   onCreated,
 }: CreateProjectDialogProps) {
   const toast = useToast();
+
   const nameId = useId();
+
   const [name, setName] = useState("");
+
   const [error, setError] = useState<string | null>(null);
+
   const [isSaving, setIsSaving] = useState(false);
+
+  const nameLength = name.trim().length;
+
+  const nearLimit = nameLength >= MAX_PROJECT_NAME_LENGTH - 8;
 
   useEffect(() => {
     if (!open) return;
+
     setName("");
+
     setError(null);
+
     setIsSaving(false);
   }, [open]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+
     const trimmed = name.trim();
+
     if (!trimmed) {
       setError("Bitte einen Projektnamen eingeben.");
+
+      return;
+    }
+
+    if (trimmed.length > MAX_PROJECT_NAME_LENGTH) {
+      setError(`Maximal ${MAX_PROJECT_NAME_LENGTH} Zeichen.`);
+
       return;
     }
 
     setIsSaving(true);
+
     setError(null);
+
     try {
       const project = await createProject(trimmed);
-      toast.success(`Projekt ${project.name} erstellt`);
+
+      toast.success(toastProjectCreated(project.name));
+
       onCreated(project);
+
       onOpenChange(false);
     } catch (e) {
       console.error("create_project failed", e);
-      const message = apiErrorMessage(e, "Projekt konnte nicht erstellt werden.");
+
+      const message = apiErrorMessage(
+        e,
+        "Projekt konnte nicht erstellt werden.",
+      );
+
       setError(message);
+
       toast.error(message);
     } finally {
       setIsSaving(false);
@@ -61,12 +103,14 @@ export function CreateProjectDialog({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Backdrop className="confirmDialogBackdrop" />
+
         <Dialog.Popup className="confirmDialogPopup createProjectDialog">
           <form className="createProjectForm" onSubmit={handleSubmit}>
             <div className="confirmDialogIntro">
               <Dialog.Title className="confirmDialogTitle">
                 Neues Projekt
               </Dialog.Title>
+
               <Dialog.Description className="confirmDialogDescription">
                 Gib einen Namen ein. Ein Ordner aus dem Explorer ist nicht
                 nötig.
@@ -82,21 +126,33 @@ export function CreateProjectDialog({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="z. B. Mein Projekt"
-                maxLength={120}
+                maxLength={MAX_PROJECT_NAME_LENGTH}
                 autoFocus
                 disabled={isSaving}
               />
+              <span
+                className={[
+                  "createProjectCharCount",
+
+                  nearLimit ? "createProjectCharCountWarn" : "",
+                ]
+
+                  .filter(Boolean)
+
+                  .join(" ")}
+                aria-live="polite"
+              >
+                {nameLength}/{MAX_PROJECT_NAME_LENGTH}
+              </span>
             </label>
 
             {error && <p className="createProjectError">{error}</p>}
 
             <div className="confirmDialogActions">
-              <Dialog.Close
-                className="confirmDialogCancel"
-                disabled={isSaving}
-              >
+              <Dialog.Close className="confirmDialogCancel" disabled={isSaving}>
                 Abbrechen
               </Dialog.Close>
+
               <button type="submit" disabled={isSaving || !name.trim()}>
                 {isSaving ? "Speichern…" : "Erstellen"}
               </button>

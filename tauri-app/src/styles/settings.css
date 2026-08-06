@@ -1,5 +1,5 @@
 /**
- * settings.css – Tab „Einstellungen“
+ * settings.css - Tab „Einstellungen“
  * Komponente: SettingsPanel.tsx (innerhalb section.container aus layout.css)
  */
 
@@ -80,6 +80,11 @@
   background: var(--accent);
 }
 
+.toggleSwitch:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .toggleSwitch::after {
   content: "";
   position: absolute;
@@ -94,6 +99,37 @@
 
 .toggleSwitch.active::after {
   transform: translateX(22px);
+}
+
+.settingsSelect {
+  width: 6.5rem;
+  min-height: 32px;
+  padding: 6px 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: var(--hover-transition);
+}
+
+.settingsSelect:hover:not(:disabled) {
+  border-color: var(--muted);
+  filter: var(--hover-filter);
+}
+
+.settingsSelect:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.settingsSelect:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 /* --- Zähler Aktivitäten / Projekte --- */

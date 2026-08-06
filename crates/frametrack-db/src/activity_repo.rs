@@ -5,7 +5,8 @@
 //! als Parameter durchgereicht (z. B. über `TrackingState` in `stats.rs`).
 
 use crate::DbError;
-use frametrack_core::{classify_activity_type, models::WindowActivity, ActivityType};
+use crate::project_repo::project_exists;
+use frametrack_core::{category_key_from_title, classify_activity_type, models::WindowActivity, ActivityType};
 use rusqlite::{params, Connection, OptionalExtension};
 
 /// Eine Aktivität inkl. optionaler Projekt-Zuordnung.
@@ -15,7 +16,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 /// - `timestamp` ← `activities.timestamp` (Unix-Sekunden)
 /// - `project_id` / `project_name` ← optional über `LEFT JOIN`
 ///
-/// Hinweis: `context_label` gibt es hier nicht – wird erst in `ActivityDto`
+/// Hinweis: `context_label` gibt es hier nicht - wird erst in `ActivityDto`
 /// aus `title` abgeleitet (`format_context_label_from_title`).
 #[derive(Debug, Clone)]
 pub struct ActivityWithProject {
@@ -26,6 +27,8 @@ pub struct ActivityWithProject {
     pub duration_seconds: u64,
     /// Beim Sampling abgeleitete Klasse; bei älteren DB-Zeilen nicht vorhanden.
     pub activity_type: Option<ActivityType>,
+    /// Beim Sampling abgeleiteter Kontextschlüssel (z. B. «Reddit»); bei Alt-Daten `None`.
+    pub context_key: Option<String>,
 }
 
 impl ActivityWithProject {
@@ -33,6 +36,13 @@ impl ActivityWithProject {
     pub fn effective_activity_type(&self) -> ActivityType {
         self.activity_type
             .unwrap_or_else(|| classify_activity_type(&self.title))
+    }
+
+    /// Kontext für Charts: gespeicherter Schlüssel oder Titel-Heuristik.
+    pub fn effective_category_key(&self) -> String {
+        self.context_key
+            .clone()
+            .unwrap_or_else(|| category_key_from_title(&self.title))
     }
 }
 
@@ -88,16 +98,21 @@ pub fn insert_aggregated_activity_with_project(
     project_id: i64,
     duration_seconds: u64,
 ) -> Result<(), DbError> {
+    if !project_exists(conn, project_id)? {
+        return Ok(());
+    }
+
     conn.execute(
         "INSERT INTO activities
-            (window_title, timestamp, project_id, duration_seconds, activity_type)
-         VALUES (?1, ?2, ?3, ?4, ?5)",
+            (window_title, timestamp, project_id, duration_seconds, activity_type, context_key)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         params![
             activity.title,
             activity.timestamp as i64,
             project_id,
             duration_seconds as i64,
             activity.activity_type.key(),
+            activity.context_key,
         ],
     )?;
     Ok(())
@@ -105,7 +120,7 @@ pub fn insert_aggregated_activity_with_project(
 
 /// Lädt **alle** Aktivitäten aller Projekte, neueste zuerst.
 ///
-/// Keine Paginierung – bei vielen Einträgen kann das teuer werden.
+/// Keine Paginierung - bei vielen Einträgen kann das teuer werden.
 ///
 /// # Aufrufer
 /// - `export.rs` (JSON/CSV-Export des vollständigen Datenbestands)
@@ -114,7 +129,7 @@ pub fn get_activities_with_projects(
 ) -> Result<Vec<ActivityWithProject>, DbError> {
     let mut stmt = conn.prepare(
         "SELECT a.window_title, a.timestamp, a.project_id, p.name, a.duration_seconds,
-                a.activity_type
+                a.activity_type, a.context_key
          FROM activities a
          LEFT JOIN projects p ON a.project_id = p.id
          ORDER BY a.timestamp DESC",
@@ -279,7 +294,7 @@ pub fn get_activities_for_project_in_range(
 ) -> Result<Vec<ActivityWithProject>, DbError> {
     let mut stmt = conn.prepare(
         "SELECT a.window_title, a.timestamp, a.project_id, p.name, a.duration_seconds,
-                a.activity_type
+                a.activity_type, a.context_key
          FROM activities a
          LEFT JOIN projects p ON a.project_id = p.id
          WHERE a.project_id = ?1
@@ -317,6 +332,7 @@ fn map_activity_row(row: &rusqlite::Row<'_>) -> Result<ActivityWithProject, rusq
         activity_type: activity_type_key
             .as_deref()
             .and_then(ActivityType::from_key),
+        context_key: row.get(6)?,
     })
 }
 
@@ -334,7 +350,7 @@ fn normalized_context_query(query: Option<String>) -> Option<String> {
 
 /// SQL-`WHERE`-Klausel für Tabellenfilter.
 ///
-/// `?1`–`?4` sind optional: SQLite behandelt `NULL` als „Bedingung ignorieren“
+/// `?1`-`?4` sind optional: SQLite behandelt `NULL` als „Bedingung ignorieren“
 /// (`? IS NULL OR …`). So brauchen COUNT und SELECT dieselbe Klausel.
 const FILTER_WHERE: &str = "
 WHERE (?1 IS NULL OR a.project_id = ?1)
@@ -411,7 +427,7 @@ pub fn get_activities_page(
     // --- Query 2: eine Seite laden ---
     let select_sql = format!(
         "SELECT a.window_title, a.timestamp, a.project_id, p.name, a.duration_seconds,
-                a.activity_type
+                a.activity_type, a.context_key
          FROM activities a
          LEFT JOIN projects p ON a.project_id = p.id
          {FILTER_WHERE}
@@ -445,7 +461,7 @@ pub fn get_activities_filtered(
 
     let select_sql = format!(
         "SELECT a.window_title, a.timestamp, a.project_id, p.name, a.duration_seconds,
-                a.activity_type
+                a.activity_type, a.context_key
          FROM activities a
          LEFT JOIN projects p ON a.project_id = p.id
          {FILTER_WHERE}

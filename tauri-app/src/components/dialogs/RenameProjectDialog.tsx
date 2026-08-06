@@ -2,8 +2,10 @@ import { useEffect, useId, useState, type FormEvent } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 import { Check, X } from "lucide-react";
 import { renameProject } from "../../api/projects";
+import { MAX_PROJECT_NAME_LENGTH } from "../../constants/project";
 import { Project } from "../../types";
 import { apiErrorMessage } from "../../utils/apiError";
+import { toastProjectRenamed } from "../../utils/toastProjectMessages";
 import { AppIcon } from "../shared/AppIcon";
 import { useToast } from "../toast/ToastContext";
 
@@ -28,6 +30,8 @@ export function RenameProjectDialog({
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const nameLength = name.trim().length;
+  const nearLimit = nameLength >= MAX_PROJECT_NAME_LENGTH - 8;
 
   useEffect(() => {
     if (!open || !project) return;
@@ -45,6 +49,10 @@ export function RenameProjectDialog({
       setError("Bitte einen Projektnamen eingeben.");
       return;
     }
+    if (trimmed.length > MAX_PROJECT_NAME_LENGTH) {
+      setError(`Maximal ${MAX_PROJECT_NAME_LENGTH} Zeichen.`);
+      return;
+    }
     if (trimmed === project.name) {
       onOpenChange(false);
       return;
@@ -54,12 +62,15 @@ export function RenameProjectDialog({
     setError(null);
     try {
       const updated = await renameProject(project.id, trimmed);
-      toast.success(`Projekt in ${updated.name} umbenannt`);
+      toast.success(toastProjectRenamed(updated.name));
       onRenamed(updated);
       onOpenChange(false);
     } catch (e) {
       console.error("rename_project failed", e);
-      const message = apiErrorMessage(e, "Projekt konnte nicht umbenannt werden.");
+      const message = apiErrorMessage(
+        e,
+        "Projekt konnte nicht umbenannt werden.",
+      );
       setError(message);
       toast.error(message);
     } finally {
@@ -94,10 +105,21 @@ export function RenameProjectDialog({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Neuer Projektname"
-                maxLength={120}
+                maxLength={MAX_PROJECT_NAME_LENGTH}
                 autoFocus
                 disabled={isSaving}
               />
+              <span
+                className={[
+                  "createProjectCharCount",
+                  nearLimit ? "createProjectCharCountWarn" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                aria-live="polite"
+              >
+                {nameLength}/{MAX_PROJECT_NAME_LENGTH}
+              </span>
             </label>
 
             {error && <p className="createProjectError">{error}</p>}

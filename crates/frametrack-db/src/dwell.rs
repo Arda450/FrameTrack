@@ -1,7 +1,5 @@
 use std::collections::{BTreeMap, HashMap};
 
-use frametrack_core::window_context::category_key_from_title;
-
 use crate::activity_repo::ActivityWithProject;
 
 pub const SECONDS_PER_DAY: u64 = 86_400;
@@ -317,7 +315,7 @@ fn build_segments(
             Segment {
                 start_ts: row.timestamp,
                 end_ts: row.timestamp.saturating_add(duration),
-                category: category_key_from_title(&row.title),
+                category: row.effective_category_key(),
             }
         })
         .collect()
@@ -486,14 +484,15 @@ mod tests {
             project_name: Some("Testprojekt".to_string()),
             duration_seconds,
             activity_type: None,
+            context_key: None,
         }
     }
 
     #[test]
     fn pie_aggregation_combines_distinct_pages_of_the_same_site() {
         let rows = vec![
-            activity("Erstes Video – VideoPortal – Mozilla Firefox", 1_000, 30),
-            activity("Zweites Video – VideoPortal – Mozilla Firefox", 1_030, 45),
+            activity("Erstes Video - VideoPortal - Mozilla Firefox", 1_000, 30),
+            activity("Zweites Video - VideoPortal - Mozilla Firefox", 1_030, 45),
         ];
 
         let segments = dwell_by_category(

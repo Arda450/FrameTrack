@@ -2,7 +2,7 @@
 /// <reference path="./stubs.d.ts" />
 
 /**
- * VEREINFACHT – Event-Muster: Rust push, React listen
+ * VEREINFACHT - Event-Muster: Rust push, React listen
  * Echt: tracking.rs emit + App.tsx listen
  */
 

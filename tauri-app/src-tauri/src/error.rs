@@ -22,9 +22,11 @@ impl ApiError {
 
 impl Display for ApiError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.code, self.message)
+        write!(f, "{}: {}", self.code, self.message)?;
+        Ok(())
     }
 }
+
 
 impl std::error::Error for ApiError {}
 

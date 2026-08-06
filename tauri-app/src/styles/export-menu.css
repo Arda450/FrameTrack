@@ -1,5 +1,5 @@
 /**
- * export-menu.css – Export-Dropdown
+ * export-menu.css - Export-Dropdown
  * Komponente: shared/ExportMenu.tsx
  */
 
@@ -24,11 +24,12 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   box-shadow: none;
+  transition: var(--hover-transition);
 }
 
 .exportMenuTrigger:not(:disabled):hover {
   border-color: var(--muted);
-  filter: brightness(1.08);
+  filter: var(--hover-filter);
 }
 
 .exportMenuDropdown {
@@ -57,9 +58,9 @@
   justify-content: flex-start;
   gap: 10px;
   box-shadow: none;
+  transition: var(--hover-transition);
 }
 
 .exportMenuItem:not(:disabled):hover {
-  background: var(--surface);
-  filter: none;
+  filter: var(--hover-filter);
 }

@@ -1,5 +1,5 @@
 /**
- * window.css – App-Fenster und Root-Container
+ * window.css - App-Fenster und Root-Container
  * Komponente: keine (Tauri-Fenster + Vite-Root)
  * Bezug: tauri.conf.json (minWidth/minHeight), index.html (#root)
  */

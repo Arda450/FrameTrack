@@ -59,6 +59,12 @@ pub fn clear_all_activities(state: State<TrackingState>) -> Result<usize, ApiErr
 /// Löscht alle Projekte und zugehörige Aktivitäten; setzt das aktive Projekt zurück.
 #[tauri::command]
 pub fn clear_all_projects(state: State<TrackingState>) -> Result<usize, ApiError> {
+    if let Ok(mut active_project) = state.active_project.lock() {
+        *active_project = None;
+    }
+
+    stop_tracking_internal(&state);
+
     let db_conn = state
         .db
         .lock()
@@ -66,12 +72,6 @@ pub fn clear_all_projects(state: State<TrackingState>) -> Result<usize, ApiError
 
     delete_all_activities(&db_conn).map_err(ApiError::from)?;
     let count = delete_all_projects(&db_conn).map_err(ApiError::from)?;
-
-    if let Ok(mut active_project) = state.active_project.lock() {
-        *active_project = None;
-    }
-
-    stop_tracking_internal(&state);
 
     Ok(count)
 }

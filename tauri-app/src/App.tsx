@@ -11,6 +11,7 @@ import { AppOverviewDialog } from "./components/dialogs/AppOverviewDialog";
 import { SettingsDialog } from "./components/dialogs/SettingsDialog";
 import OverviewPanel from "./components/panels/OverviewPanel";
 import { ToastProvider } from "./components/toast/ToastContext";
+import { useTrackingNotifications } from "./hooks/useTrackingNotifications";
 import { Activity, Project } from "./types";
 import { apiErrorMessage } from "./utils/apiError";
 import "./App.css";
@@ -36,6 +37,10 @@ export default function App() {
     const saved = localStorage.getItem("theme");
     return saved === "light" ? "light" : "dark";
   });
+  const trackingNotifications = useTrackingNotifications(
+    isTracking,
+    activeProject?.name ?? null,
+  );
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -122,6 +127,7 @@ export default function App() {
   async function handleStartTracking() {
     try {
       await startTracking();
+      trackingNotifications.beginSession();
       setIsTracking(true);
       setStatusError(null);
     } catch (e) {
@@ -135,6 +141,7 @@ export default function App() {
   async function handleStopTracking() {
     try {
       await stopTracking();
+      await trackingNotifications.finishSession();
       setIsTracking(false);
       setStatusError(null);
     } catch (e) {
@@ -185,6 +192,12 @@ export default function App() {
           onOpenChange={setSettingsOpen}
           onThemeChange={setTheme}
           onDataCleared={handleDataCleared}
+          notificationSettings={trackingNotifications.settings}
+          onNotificationsEnabledChange={trackingNotifications.setEnabled}
+          onNotificationIntervalChange={
+            trackingNotifications.setIntervalMinutes
+          }
+          onSendTestNotification={trackingNotifications.sendTestNotification}
         />
 
         <AppOverviewDialog

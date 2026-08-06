@@ -13,22 +13,12 @@ use frametrack_db::{
 };
 use frametrack_tracking::{current_timestamp, TrackingState};
 
+const MAX_PROJECT_NAME_LEN: usize = 64;
+
 /// Legt ein Projekt nur mit Namen an (ohne File-Explorer) und setzt es als aktiv.
 #[tauri::command]
 pub fn create_project(state: State<TrackingState>, name: String) -> Result<ProjectDto, ApiError> {
-    let trimmed = name.trim().to_string();
-    if trimmed.is_empty() {
-        return Err(ApiError::new(
-            "INVALID_PROJECT_NAME",
-            "Projektname darf nicht leer sein",
-        ));
-    }
-    if trimmed.len() > 120 {
-        return Err(ApiError::new(
-            "INVALID_PROJECT_NAME",
-            "Projektname ist zu lang (max. 120 Zeichen)",
-        ));
-    }
+    let trimmed = validate_project_name(&name)?;
 
     let db_conn = state
         .db
@@ -125,30 +115,28 @@ pub fn set_active_project(
 /// War das gelöschte Projekt aktiv, wird der aktive Zustand zurückgesetzt und das Tracking gestoppt.
 #[tauri::command]
 pub fn delete_project(state: State<TrackingState>, project_id: i64) -> Result<(), ApiError> {
-    // DB-Lock für die Löschung des Projekts und seiner Aktivitäten.
+    let should_stop = state
+        .active_project
+        .lock()
+        .ok()
+        .and_then(|active| active.as_ref().map(|(id, _)| *id == project_id))
+        .unwrap_or(false);
+
+    if should_stop {
+        if let Ok(mut active) = state.active_project.lock() {
+            if active.as_ref().map(|(id, _)| *id) == Some(project_id) {
+                *active = None;
+            }
+        }
+        stop_tracking_internal(&state);
+    }
+
     let db_conn = state
         .db
         .lock()
         .map_err(|_| ApiError::new("DB_LOCK_FAILED", "Datenbank-Lock fehlgeschlagen"))?;
 
     delete_project_db(&db_conn, project_id).map_err(ApiError::from)?;
-
-    // DB-Lock früh freigeben, bevor der State-Lock angefordert wird.
-    drop(db_conn);
-
-    // Falls das gelöschte Projekt aktiv war, aktiven Zustand zurücksetzen.
-    let mut cleared_active = false;
-    if let Ok(mut active) = state.active_project.lock() {
-        if active.as_ref().map(|(id, _)| *id) == Some(project_id) {
-            *active = None;
-            cleared_active = true;
-        }
-    }
-
-    // Ohne aktives Projekt ergibt weiteres Tracking keinen Sinn.
-    if cleared_active {
-        stop_tracking_internal(&state);
-    }
 
     Ok(())
 }
@@ -161,10 +149,10 @@ fn validate_project_name(name: &str) -> Result<String, ApiError> {
             "Projektname darf nicht leer sein",
         ));
     }
-    if trimmed.len() > 120 {
+    if trimmed.len() > MAX_PROJECT_NAME_LEN {
         return Err(ApiError::new(
             "INVALID_PROJECT_NAME",
-            "Projektname ist zu lang (max. 120 Zeichen)",
+            &format!("Projektname ist zu lang (max. {MAX_PROJECT_NAME_LEN} Zeichen)"),
         ));
     }
     Ok(trimmed)

@@ -1,7 +1,8 @@
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
-  Line,
-  LineChart,
+  ReferenceLine,
   Tooltip,
   XAxis,
   YAxis,
@@ -20,21 +21,25 @@ import { colorForCategory } from "../../utils/chartColors";
 import {
   formatBucketLabel,
   formatTimeSeriesAxisLabel,
+  SECONDS_PER_DAY,
   timeSeriesValueUnit,
   type TimeSeriesValueUnit,
 } from "../../utils/timeSeriesBuckets";
 import { type TimeSeriesTooltipBodyProps } from "./ChartTooltip";
 import { TimeSeriesTooltipPortal } from "./TimeSeriesTooltipPortal";
+import { InfoHint } from "../shared/InfoHint";
 
 type Props = {
   data: CategoryTimeSeriesPoint[];
   categoryOrder?: readonly string[];
   bucketSeconds?: number;
   emptyHint?: string;
-  /** Wenn false: leere Buckets am Tagesanfang behalten (Tagesbericht 00–24 Uhr). */
+  /** Wenn false: leere Buckets am Tagesanfang behalten (Tagesbericht 00-24 Uhr). */
   trimLeadingEmptyBuckets?: boolean;
   /** Optional: Referenz auf den Plot-Container (z. B. für PDF-Export). */
   plotCaptureRef?: RefObject<HTMLDivElement | null>;
+  /** Zeigt nur diesen Kontext (gesetzt per Legenden-Klick). */
+  focusedCategory?: string | null;
 };
 
 type ChartRow = {
@@ -44,11 +49,27 @@ type ChartRow = {
 };
 
 /** Mindestbreite pro Bucket für horizontalen Scroll (Detailansicht). */
-const PX_PER_BUCKET = 32;
+const PX_PER_BUCKET = 28;
 const CHART_HEIGHT = 420;
+const MAX_DISPLAY_CATEGORIES = 8;
+const OTHER_CATEGORY = "Sonstige";
+const Y_AXIS_TICK_WIDTH = 46;
+const Y_AXIS_LABEL_OFFSET = 0;
+
+function yAxisLabel(axisLabel: string) {
+  return {
+    value: axisLabel,
+    angle: -90,
+    position: "insideLeft" as const,
+    offset: Y_AXIS_LABEL_OFFSET,
+    fill: "var(--muted)",
+    fontSize: 11,
+    style: { textAnchor: "middle" as const },
+  };
+}
 
 export function resolveCategoryNames(
-  data: CategoryTimeSeriesPoint[],
+  data: readonly CategoryTimeSeriesPoint[],
   preferredOrder: readonly string[] = [],
 ): string[] {
   const extra = new Set<string>();
@@ -88,6 +109,79 @@ export function appendTrailingBoundary(
   }
   const last = data[data.length - 1];
   return [...data, { ts: last.ts + bucketSeconds, categories: [] }];
+}
+
+function aggregateCategoryTotals(
+  data: readonly CategoryTimeSeriesPoint[],
+): Map<string, number> {
+  const totals = new Map<string, number>();
+  for (const point of data) {
+    for (const cat of point.categories) {
+      totals.set(cat.name, (totals.get(cat.name) ?? 0) + cat.value);
+    }
+  }
+  return totals;
+}
+
+/** Zeigt die wichtigsten Kategorien; Rest wird zu Sonstige zusammengefasst. */
+export function pickDisplayCategories(
+  data: readonly CategoryTimeSeriesPoint[],
+  preferredOrder: readonly string[] = [],
+): string[] {
+  const allNames = resolveCategoryNames(data, preferredOrder);
+  if (allNames.length <= MAX_DISPLAY_CATEGORIES) {
+    return allNames;
+  }
+
+  const totals = aggregateCategoryTotals(data);
+  const sorted = [...allNames].sort(
+    (a, b) => (totals.get(b) ?? 0) - (totals.get(a) ?? 0),
+  );
+  const top = sorted.slice(0, MAX_DISPLAY_CATEGORIES - 1);
+  const hasOtherBucket =
+    sorted.slice(MAX_DISPLAY_CATEGORIES - 1).length > 0 ||
+    top.includes(OTHER_CATEGORY);
+
+  return hasOtherBucket ? [...top, OTHER_CATEGORY] : top;
+}
+
+function collapseRowsToDisplayCategories(
+  rows: ChartRow[],
+  allCategoryNames: readonly string[],
+  displayCategories: readonly string[],
+): ChartRow[] {
+  const visible = new Set(
+    displayCategories.filter((name) => name !== OTHER_CATEGORY),
+  );
+
+  return rows.map((row) => {
+    const collapsed: ChartRow = {
+      ts: row.ts,
+      label: row.label,
+    };
+    let otherSum = 0;
+
+    for (const name of allCategoryNames) {
+      const value = Number(row[name] ?? 0);
+      if (visible.has(name)) {
+        collapsed[name] = value;
+      } else if (name !== OTHER_CATEGORY) {
+        otherSum += value;
+      }
+    }
+
+    if (displayCategories.includes(OTHER_CATEGORY)) {
+      collapsed[OTHER_CATEGORY] = otherSum + Number(row[OTHER_CATEGORY] ?? 0);
+    }
+
+    for (const name of displayCategories) {
+      if (collapsed[name] === undefined) {
+        collapsed[name] = 0;
+      }
+    }
+
+    return collapsed;
+  });
 }
 
 function toChartData(
@@ -132,6 +226,7 @@ function TimeSeriesChartInner({
   emptyHint = "Keine Zeitverlaufsdaten für den gewählten Zeitraum.",
   trimLeadingEmptyBuckets: shouldTrimLeading = true,
   plotCaptureRef,
+  focusedCategory = null,
 }: Props) {
   const plotInnerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -169,10 +264,30 @@ function TimeSeriesChartInner({
     [data, shouldTrimLeading],
   );
 
-  const categoryNames = useMemo(
+  const allCategoryNames = useMemo(
     () => resolveCategoryNames(trimmed, categoryOrder),
     [trimmed, categoryOrder],
   );
+
+  const isFocused =
+    focusedCategory != null && allCategoryNames.includes(focusedCategory);
+
+  const displayCategories = useMemo(() => {
+    if (isFocused) {
+      return [focusedCategory];
+    }
+    return pickDisplayCategories(trimmed, categoryOrder);
+  }, [isFocused, focusedCategory, trimmed, categoryOrder]);
+
+  const stackOrder = useMemo(() => {
+    if (isFocused) {
+      return [focusedCategory];
+    }
+    const totals = aggregateCategoryTotals(trimmed);
+    return [...displayCategories].sort(
+      (a, b) => (totals.get(b) ?? 0) - (totals.get(a) ?? 0),
+    );
+  }, [isFocused, focusedCategory, trimmed, displayCategories]);
 
   // Memoize: Einheit und Chart-Daten
   const unit = useMemo(
@@ -181,22 +296,57 @@ function TimeSeriesChartInner({
   );
 
   const chartData = useMemo(() => {
-    if (trimmed.length === 0 || categoryNames.length === 0) {
+    if (trimmed.length === 0 || allCategoryNames.length === 0) {
       return [];
     }
-    const chartSource = appendTrailingBoundary(trimmed, bucketSeconds);
-    return toChartData(chartSource, categoryNames, bucketSeconds, unit);
-  }, [trimmed, categoryNames, bucketSeconds, unit]);
+    const rows = toChartData(trimmed, allCategoryNames, bucketSeconds, unit);
+    if (isFocused) {
+      return rows.map((row) => ({
+        ts: row.ts,
+        label: row.label,
+        [focusedCategory]: Number(row[focusedCategory] ?? 0),
+      }));
+    }
+    return collapseRowsToDisplayCategories(
+      rows,
+      allCategoryNames,
+      displayCategories,
+    );
+  }, [
+    trimmed,
+    allCategoryNames,
+    displayCategories,
+    bucketSeconds,
+    unit,
+    isFocused,
+    focusedCategory,
+  ]);
+
+  const bucketCapacity = useMemo(
+    () => unit.secondsToValue(bucketSeconds),
+    [unit, bucketSeconds],
+  );
+
+  const yAxisMax = useMemo(() => {
+    let dataMax = 0;
+    for (const row of chartData) {
+      let bucketTotal = 0;
+      for (const name of displayCategories) {
+        bucketTotal += Number(row[name] ?? 0);
+      }
+      dataMax = Math.max(dataMax, bucketTotal);
+    }
+    return Math.max(bucketCapacity, dataMax * 1.05);
+  }, [chartData, displayCategories, bucketCapacity]);
 
   // Memoize: Layout-Werte
-  const { showDots, chartWidth, denseAxis, bucketLabel } = useMemo(() => {
+  const { chartWidth, denseAxis, bucketLabel } = useMemo(() => {
     // Natürliche Breite (Detailansicht): mind. PX_PER_BUCKET pro Datenpunkt.
     const naturalWidth = chartData.length * PX_PER_BUCKET;
     // Container füllen, wenn wenige Punkte (Wochenbericht) → kein Whitespace.
     // Bei vielen Punkten (Tagesbericht) bleibt die natürliche Breite → Scroll.
     const width = Math.max(naturalWidth, containerWidth || 480);
     return {
-      showDots: chartData.length <= 24,
       chartWidth: width,
       denseAxis: chartData.length > 40,
       bucketLabel: formatBucketLabel(bucketSeconds),
@@ -205,8 +355,8 @@ function TimeSeriesChartInner({
 
   // Memoize: Prüfung ob Aktivität vorhanden
   const hasActivity = useMemo(
-    () => hasAnyActivity(trimmed, categoryNames),
-    [trimmed, categoryNames],
+    () => hasAnyActivity(trimmed, allCategoryNames),
+    [trimmed, allCategoryNames],
   );
 
   // Memoize: Tooltip-Renderer (vermeidet neue Funktionsreferenz bei jedem Render)
@@ -226,7 +376,7 @@ function TimeSeriesChartInner({
   );
 
   // Early returns nach allen Hooks
-  if (trimmed.length === 0 || categoryNames.length === 0 || !hasActivity) {
+  if (trimmed.length === 0 || allCategoryNames.length === 0 || !hasActivity) {
     return (
       <p style={{ color: "var(--muted)", fontStyle: "italic", marginTop: 8 }}>
         {emptyHint}
@@ -236,11 +386,23 @@ function TimeSeriesChartInner({
 
   return (
     <div className="timeSeriesChartWrap">
-      <p className="timeSeriesChartCaption">
-        Eine Linie pro Kategorie: {unit.captionUnit} pro {bucketLabel}-Fenster
-        (nicht summiert; bei Wechseln können mehrere Linien im selben Fenster
-        sichtbar sein). Horizontal scrollen für mehr Detail.
-      </p>
+      <div className="timeSeriesChartToolbar">
+        <InfoHint label="Hilfe zum Zeitverlauf">
+          {isFocused ? (
+            <>
+              Es wird nur <strong>{focusedCategory}</strong> angezeigt. In der
+              Legende erneut tippen, um alle Kontexte zu sehen.
+            </>
+          ) : (
+            <>
+              Jeder Balken steht für ein {bucketLabel}-Fenster. Höhe = aktive
+              Zeit, Farbe = Kontext. Selten genutzte Kontexte werden zu{" "}
+              {OTHER_CATEGORY} zusammengefasst (max. {MAX_DISPLAY_CATEGORIES}).
+              Horizontal scrollen für mehr Detail.
+            </>
+          )}
+        </InfoHint>
+      </div>
       <div
         ref={scrollRef}
         className="timeSeriesChartPlot timeSeriesChartPlotScroll"
@@ -250,18 +412,20 @@ function TimeSeriesChartInner({
           className="timeSeriesChartPlotInner"
           style={{ width: chartWidth, height: CHART_HEIGHT }}
         >
-          <LineChart
+          <BarChart
             width={chartWidth}
             height={CHART_HEIGHT}
             data={chartData}
-            margin={{ top: 8, right: 12, left: 4, bottom: denseAxis ? 20 : 4 }}
+            margin={{ top: 8, right: 12, left: 30, bottom: denseAxis ? 20 : 4 }}
+            barCategoryGap={denseAxis ? "12%" : "22%"}
+            barGap={1}
           >
             <Tooltip
               shared
               allowEscapeViewBox={{ x: true, y: true }}
               reverseDirection={{ x: true, y: true }}
               content={renderTooltip}
-              cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
+              cursor={{ fill: "var(--border)", opacity: 0.25 }}
             />
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis
@@ -275,36 +439,35 @@ function TimeSeriesChartInner({
             />
             <YAxis
               tick={{ fill: "var(--muted)", fontSize: 11 }}
-              width={36}
+              width={Y_AXIS_TICK_WIDTH}
+              tickMargin={8}
+              domain={[0, yAxisMax]}
               tickFormatter={(v) =>
                 typeof v === "number" ? v.toFixed(1) : String(v)
               }
-              label={{
-                value: unit.axisLabel,
-                angle: -90,
-                position: "insideLeft",
-                fill: "var(--muted)",
-                fontSize: 11,
-              }}
+              label={yAxisLabel(unit.axisLabel)}
             />
-            {categoryNames.map((name) => (
-              <Line
+            {bucketSeconds < SECONDS_PER_DAY ? (
+              <ReferenceLine
+                y={bucketCapacity}
+                stroke="var(--muted)"
+                strokeDasharray="4 4"
+                strokeOpacity={0.45}
+                ifOverflow="extendDomain"
+              />
+            ) : null}
+            {stackOrder.map((name) => (
+              <Bar
                 key={name}
-                type="stepAfter"
+                stackId="activity"
                 dataKey={name}
                 name={name}
-                stroke={colorForCategory(name, categoryNames)}
-                strokeWidth={2}
-                dot={
-                  showDots
-                    ? { r: 3, strokeWidth: 1, fill: "var(--surface-strong)" }
-                    : false
-                }
-                activeDot={{ r: 5, strokeWidth: 1 }}
+                fill={colorForCategory(name, categoryOrder)}
+                maxBarSize={denseAxis ? 10 : 18}
                 isAnimationActive={false}
               />
             ))}
-          </LineChart>
+          </BarChart>
         </div>
       </div>
     </div>

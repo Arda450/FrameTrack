@@ -1,5 +1,5 @@
 /**
- * activities-table.css – Aktivitäten-Tabelle
+ * activities-table.css - Aktivitäten-Tabelle
  * Komponente: ActivitiesTable.tsx (eingebettet in OverviewPanel, linke Spalte)
  * Scrollbar-Farben: scrollbars.css
  */
@@ -191,12 +191,12 @@
   cursor: pointer;
   user-select: none;
   box-shadow: none;
-  transition: 120ms ease;
+  transition: var(--hover-transition);
 }
 
 .activitiesTableSortButton:hover {
   color: var(--text);
-  filter: brightness(1.05);
+  filter: var(--hover-filter);
 }
 
 .activitiesTableSortButton:focus-visible {
@@ -281,10 +281,7 @@
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
-  transition:
-    border-color 120ms ease,
-    background-color 120ms ease,
-    filter 120ms ease;
+  transition: var(--hover-transition);
   color-scheme: dark;
 }
 
@@ -294,7 +291,7 @@
 
 .activitiesPageSizeSelect:hover {
   border-color: var(--muted);
-  filter: brightness(1.05);
+  filter: var(--hover-filter);
 }
 
 .activitiesPageSizeSelect:focus-visible {

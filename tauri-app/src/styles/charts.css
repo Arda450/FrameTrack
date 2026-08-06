@@ -1,5 +1,5 @@
 /**
- * charts.css – Diagramme und Auswertung
+ * charts.css - Diagramme und Auswertung
  * Komponenten:
  *   - OverviewPanel.tsx (chartViewSwitch, chartWithSharedLegend, chartPane)
  *   - PieChart.tsx (.pieChartPlot)
@@ -277,13 +277,6 @@
   position: relative;
 }
 
-.timeSeriesChartCaption {
-  margin: 10px 0;
-  color: var(--muted);
-  font-size: 0.82rem;
-  text-align: left;
-}
-
 .timeSeriesChartPlot {
   width: 100%;
   height: auto;
@@ -311,6 +304,12 @@
 
 .timeSeriesChartPlotInner {
   flex-shrink: 0;
+  overflow: visible;
+}
+
+.timeSeriesChartPlotInner .recharts-wrapper,
+.timeSeriesChartPlotInner .recharts-surface {
+  overflow: visible;
 }
 
 .chartTooltipPortal {
@@ -453,6 +452,34 @@
   flex-shrink: 0;
 }
 
+.chartLegendItemInteractive {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: calc(var(--radius) - 2px);
+  transition: var(--hover-transition);
+}
+
+.chartLegendItemInteractive:hover {
+  filter: var(--hover-filter);
+}
+
+.chartLegendItemSelected {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-strong));
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--accent) 28%, var(--border));
+}
+
+.chartLegendItemDimmed {
+  opacity: 0.45;
+}
+
 /* Kompakte Legende: einspaltig, Titel darüber, Einträge in gerahmter Liste */
 .chartLegendCompact {
   width: 100%;
@@ -464,7 +491,7 @@
 }
 
 .chartLegendCompact .chartLegendHint {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.03em;
@@ -475,35 +502,50 @@
 .chartLegendCompact .chartLegendList {
   box-sizing: border-box;
   width: 100%;
-  padding: 10px 14px;
+  padding: 6px 10px;
   margin: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-strong);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
+}
+
+.chartLegendCompact .chartLegendRow {
+  margin: 0;
+  padding: 0;
 }
 
 .chartLegendCompact .chartLegendItem {
   display: grid;
-  grid-template-columns: 10px minmax(0, 1fr) auto;
-  gap: 8px 12px;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  gap: 6px 10px;
   align-items: center;
   width: 100%;
+  min-height: 22px;
+  padding: 2px 4px;
+  box-sizing: border-box;
+}
+
+.chartLegendCompact .chartLegendDot {
+  width: 8px;
+  height: 8px;
 }
 
 .chartLegendCompact .chartLegendLabel {
   flex: unset;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
+  line-height: 1.25;
 }
 
 .chartLegendCompact .chartLegendMeta {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-variant-numeric: tabular-nums;
   text-align: right;
   justify-self: end;
+  line-height: 1.25;
 }
 
 .chartWithSharedLegend .chartLegendCompact {
@@ -516,6 +558,10 @@
   }
   .chartLegendCompact .chartLegendMeta {
     font-size: 0.72rem;
+  }
+  .chartLegendCompact .chartLegendItem {
+    min-height: 20px;
+    padding: 1px 4px;
   }
 }
 
@@ -593,12 +639,12 @@
   color: var(--muted);
   background: var(--surface);
   cursor: pointer;
-  transition: 120ms ease;
+  transition: var(--hover-transition);
 }
 
 .chartViewBtn:hover {
   color: var(--text);
-  filter: brightness(1.05);
+  filter: var(--hover-filter);
 }
 
 .chartViewBtnActive {

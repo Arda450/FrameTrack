@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import type { Project } from "../../types";
 
+function ProjectName({ name }: { name: string }) {
+  return <strong className="dialogProjectName">{name}</strong>;
+}
+
 export function buildDeleteProjectDescription(
   selectedProjects: Project[],
 ): ReactNode {
@@ -9,7 +13,7 @@ export function buildDeleteProjectDescription(
   if (selectedProjects.length === 1) {
     return (
       <>
-        Möchtest du das Projekt <strong>{selectedProjects[0].name}</strong>{" "}
+        Möchtest du das Projekt <ProjectName name={selectedProjects[0].name} />{" "}
         wirklich löschen? {activityNote}
       </>
     );
@@ -23,7 +27,7 @@ export function buildDeleteProjectDescription(
           <span key={project.id}>
             {index > 0 &&
               (index === selectedProjects.length - 1 ? " und " : ", ")}
-            <strong>{project.name}</strong>
+            <ProjectName name={project.name} />
           </span>
         ))}{" "}
         wirklich löschen? {activityNote}
@@ -39,7 +43,7 @@ export function buildDeleteProjectDescription(
       {preview.map((project, index) => (
         <span key={project.id}>
           {index > 0 && ", "}
-          <strong>{project.name}</strong>
+          <ProjectName name={project.name} />
         </span>
       ))}
       {" …"})? {activityNote}

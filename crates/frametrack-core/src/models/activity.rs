@@ -7,4 +7,6 @@ pub struct WindowActivity {
     pub timestamp: u64, // unix timestamp in seconds
     /// Bereits beim Sampling abgeleitet; enthält niemals die Browser-URL.
     pub activity_type: ActivityType,
+    /// Stabiler Kontext für Charts (z. B. «Reddit»), ohne URL zu persistieren.
+    pub context_key: String,
 }

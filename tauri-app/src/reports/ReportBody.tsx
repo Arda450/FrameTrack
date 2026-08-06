@@ -33,7 +33,11 @@ import {
   defaultExportFileName,
   pickExportSavePath,
 } from "../utils/exportSaveDialog";
-import { REPORT_DWELL_OPTS, REPORT_ESTIMATION_HINT } from "./reportConfig";
+import {
+  REPORT_DWELL_OPTS,
+  ACTIVE_TIME_MEASUREMENT_HINT,
+  ACTIVE_TIME_MEASUREMENT_HINT_LONG,
+} from "./reportConfig";
 import {
   buildReportPdf,
   type ReportPdfTableSection,
@@ -111,6 +115,9 @@ function ReportBodyInner({
   const [activeExport, setActiveExport] = useState<
     "json" | "csv" | "pdf" | null
   >(null);
+  const [focusedTimelineCategory, setFocusedTimelineCategory] = useState<
+    string | null
+  >(null);
   // Deferred Rendering: Charts erst nach dem ersten Frame rendern,
   // damit die UI sofort erscheint und nicht blockiert.
   const [chartsReady, setChartsReady] = useState(false);
@@ -121,6 +128,10 @@ function ReportBodyInner({
     const id = requestAnimationFrame(() => setChartsReady(true));
     return () => cancelAnimationFrame(id);
   }, []);
+
+  useEffect(() => {
+    setFocusedTimelineCategory(null);
+  }, [report.total_active_seconds, exportArgs.fromTs, exportArgs.toTs]);
 
   const activityTypeChartRef = useRef<HTMLDivElement>(null);
   const pieChartRef = useRef<HTMLDivElement>(null);
@@ -242,7 +253,7 @@ function ReportBodyInner({
         if (weekly.by_day.length > 0) {
           tables.push({
             title: "Aktivität pro Tag",
-            hint: "Geschätzte aktive Zeit je Kalendertag für dieses Projekt.",
+            hint: `Aktive Zeit je Kalendertag für dieses Projekt. ${ACTIVE_TIME_MEASUREMENT_HINT}`,
             items: [...weekly.by_day],
             totalSeconds: report.total_active_seconds,
             formatName: (iso) => formatIsoDateLong(iso),
@@ -281,7 +292,7 @@ function ReportBodyInner({
         periodLabel,
         narrative: narrativeSummary,
         kpis,
-        estimationHint: REPORT_ESTIMATION_HINT,
+        estimationHint: ACTIVE_TIME_MEASUREMENT_HINT,
         pieSections,
         tables,
       });
@@ -431,7 +442,9 @@ function ReportBodyInner({
           ))}
         </div>
 
-        <p className="periodReportEstimationHint">{REPORT_ESTIMATION_HINT}</p>
+        <p className="periodReportEstimationHint">
+          {ACTIVE_TIME_MEASUREMENT_HINT_LONG}
+        </p>
       </header>
 
       {extraSections}
@@ -505,12 +518,15 @@ function ReportBodyInner({
                 trimLeadingEmptyBuckets={trimLeadingEmptyBuckets}
                 plotCaptureRef={timelinePlotRef}
                 emptyHint={labels.timelineEmpty}
+                focusedCategory={focusedTimelineCategory}
               />
             </div>
             <ChartLegend
               entries={timelineLegendEntries}
               viewLabel={labels.timelineLegend}
               variant="compact"
+              selectedEntry={focusedTimelineCategory}
+              onEntrySelect={setFocusedTimelineCategory}
             />
           </div>
         </>

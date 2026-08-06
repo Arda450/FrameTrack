@@ -94,8 +94,8 @@ fn strip_browser_suffix(title: &str) -> String {
             for separator in TITLE_SEPARATORS {
                 let suffix = format!("{separator}{wrapper}");
                 if lower.ends_with(&suffix.to_lowercase()) {
-                    out = out[..out.len() - suffix.len()].trim().to_string();
-                    stripped = true;
+                out = out[..out.len() - suffix.len()].trim().to_string();
+                stripped = true;
                     break 'wrappers;
                 }
             }
@@ -163,7 +163,7 @@ fn is_ticket_like(token: &str) -> bool {
 }
 
 /// Leitet die stabile App-/Website-Identität aus der üblichen Titelform
-/// `<Inhalt> – <App oder Website>` ab.
+/// `<Inhalt> - <App oder Website>` ab.
 ///
 /// Die Auswahl ist absichtlich strukturbasiert: Neue Apps und Websites werden
 /// dadurch automatisch gruppiert, ohne eine Namensliste pflegen zu müssen.
@@ -179,6 +179,25 @@ fn detect_app(tokens: &[String]) -> String {
 /// Details wie Dokument-, Video- oder Produktnamen werden entfernt, damit
 /// verschiedene Fenster derselben App bzw. Website zusammengefasst werden.
 pub fn category_key_from_title(raw_title: &str) -> String {
+    category_key_from_title_with_url(raw_title, None)
+}
+
+/// Wie [`category_key_from_title`], nutzt optional den flüchtigen Browser-URL-Pfad
+/// (ohne Domain/Query) zur Erkennung strukturtypischer Seiten wie Reddit.
+pub fn category_key_from_title_with_url(
+    raw_title: &str,
+    ephemeral_url: Option<&str>,
+) -> String {
+    if let Some(path) = ephemeral_url.and_then(sanitized_url_path) {
+        if let Some(site) = site_key_from_url_path(&path) {
+            return site.to_string();
+        }
+    }
+
+    category_key_from_title_tokens(raw_title)
+}
+
+fn category_key_from_title_tokens(raw_title: &str) -> String {
     let raw = raw_title.trim();
     if raw.is_empty() {
         return "Unknown".to_string();
@@ -190,7 +209,42 @@ pub fn category_key_from_title(raw_title: &str) -> String {
         return "Unknown".to_string();
     }
 
-    detect_app(&tokens)
+    if is_reddit_title_signal(&tokens, &core) {
+        return "Reddit".to_string();
+    }
+
+    let key = detect_app(&tokens);
+    if key.eq_ignore_ascii_case("reddit") {
+        return "Reddit".to_string();
+    }
+
+    key
+}
+
+const REDDIT_URL_PATH_MARKERS: &[&str] = &["/r/", "/comments/"];
+
+fn site_key_from_url_path(path: &str) -> Option<&'static str> {
+    if contains_any(path, REDDIT_URL_PATH_MARKERS) {
+        return Some("Reddit");
+    }
+    None
+}
+
+fn is_reddit_title_signal(tokens: &[String], core: &str) -> bool {
+    let lower = core.to_lowercase();
+    if lower.contains("reddit") {
+        return true;
+    }
+
+    tokens.iter().any(|token| {
+        let trimmed = token.trim();
+        trimmed.starts_with("r/")
+            && trimmed.len() > 2
+            && trimmed
+                .chars()
+                .skip(2)
+                .all(|c| c.is_ascii_alphanumeric() || c == '_')
+    })
 }
 
 /// Lesbarer App-/Website-Name für bestehende Aufrufer.
@@ -236,7 +290,7 @@ pub fn format_context_label_from_title(raw_title: &str) -> String {
 ///
 /// Die Erkennung ist absichtlich **strukturbasiert**: Es werden Muster im
 /// Titelformat (Dateiendungen, Ticket-IDs, Repo-Pfade, typische Phrasen,
-/// URL-Pfadsegmente, Desktop-App-Rollen) ausgewertet – **ohne** Liste
+/// URL-Pfadsegmente, Desktop-App-Rollen) ausgewertet - **ohne** Liste
 /// bekannter Websites oder Domains.
 pub fn classify_activity_type(raw_title: &str) -> ActivityType {
     classify_activity_type_with_url(raw_title, None)
@@ -845,19 +899,20 @@ fn classify_from_parsed(parsed: &ParsedTitle, url_path: Option<&str>) -> Activit
 #[cfg(test)]
 mod tests {
     use super::{
-        classify_activity_type, classify_activity_type_with_url, format_app_label_from_title,
+        category_key_from_title, category_key_from_title_with_url, classify_activity_type,
+        classify_activity_type_with_url, format_app_label_from_title,
         format_context_label_from_title, sanitized_url_path, ActivityType,
     };
 
     #[test]
     fn groups_different_browser_pages_by_trailing_site_identity() {
         assert_eq!(
-            format_app_label_from_title("Einführung in Rust – VideoPortal – Mozilla Firefox"),
+            format_app_label_from_title("Einführung in Rust - VideoPortal - Mozilla Firefox"),
             "VideoPortal"
         );
         assert_eq!(
             format_app_label_from_title(
-                "Fortgeschrittene Patterns – VideoPortal – Mozilla Firefox"
+                "Fortgeschrittene Patterns - VideoPortal - Mozilla Firefox"
             ),
             "VideoPortal"
         );
@@ -890,7 +945,7 @@ mod tests {
     #[test]
     fn context_label_keeps_detail_but_uses_same_app_identity() {
         assert_eq!(
-            format_context_label_from_title("Einführung in Rust – VideoPortal – Mozilla Firefox"),
+            format_context_label_from_title("Einführung in Rust - VideoPortal - Mozilla Firefox"),
             "VideoPortal: Einführung in Rust"
         );
     }
@@ -1056,5 +1111,35 @@ mod tests {
                 Some(*activity_type)
             );
         }
+    }
+
+    #[test]
+    fn groups_reddit_by_url_path_without_domain_lists() {
+        assert_eq!(
+            category_key_from_title_with_url(
+                "Interessanter Thread - Google Chrome",
+                Some("https://www.reddit.com/r/rust/comments/abc123/title/"),
+            ),
+            "Reddit"
+        );
+        assert_eq!(
+            category_key_from_title_with_url(
+                "Front page - Google Chrome",
+                Some("https://old.reddit.com/r/programming/"),
+            ),
+            "Reddit"
+        );
+    }
+
+    #[test]
+    fn groups_reddit_from_title_when_site_name_or_subreddit_present() {
+        assert_eq!(
+            category_key_from_title("r/rust - Ownership question - Reddit - Mozilla Firefox"),
+            "Reddit"
+        );
+        assert_eq!(
+            format_app_label_from_title("Some post title - Reddit - Google Chrome"),
+            "Reddit"
+        );
     }
 }

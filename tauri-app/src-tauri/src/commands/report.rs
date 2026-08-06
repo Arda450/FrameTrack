@@ -338,7 +338,7 @@ pub fn get_daily_report(
     })
 }
 
-/// Aggregierter Wochenbericht für ein Projekt (Mo–So, KPIs, Tagesverlauf).
+/// Aggregierter Wochenbericht für ein Projekt (Mo-So, KPIs, Tagesverlauf).
 /// Die "Zeit pro Projekt"-Daten werden NICHT mehr hier geladen (siehe `get_by_project_for_range`).
 #[tauri::command]
 pub fn get_weekly_report(

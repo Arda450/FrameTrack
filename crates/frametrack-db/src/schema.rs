@@ -40,6 +40,13 @@ pub fn open_database(path: &Path) -> Result<Connection, DbError> {
     Ok(conn)
 }
 
+/// In-Memory-Datenbank für Tests und lokale Experimente.
+pub fn init_in_memory_database() -> Result<Connection, DbError> {
+    let conn = Connection::open_in_memory()?;
+    apply_schema(&conn)?;
+    Ok(conn)
+}
+
 fn apply_schema(conn: &Connection) -> Result<(), DbError> {
     conn.execute("PRAGMA foreign_keys = ON", [])?;
 
@@ -60,7 +67,8 @@ fn apply_schema(conn: &Connection) -> Result<(), DbError> {
             timestamp INTEGER NOT NULL,
             project_id INTEGER REFERENCES projects(id),
             duration_seconds INTEGER NOT NULL DEFAULT 2,
-            activity_type TEXT
+            activity_type TEXT,
+            context_key TEXT
         )",
         [],
     )?;
@@ -89,6 +97,17 @@ fn apply_schema(conn: &Connection) -> Result<(), DbError> {
     };
     if !has_activity_type {
         conn.execute("ALTER TABLE activities ADD COLUMN activity_type TEXT", [])?;
+    }
+
+    let has_context_key = {
+        let mut stmt = conn.prepare("PRAGMA table_info(activities)")?;
+        let columns = stmt
+            .query_map([], |row| row.get::<_, String>(1))?
+            .collect::<Result<Vec<_>, _>>()?;
+        columns.iter().any(|name| name == "context_key")
+    };
+    if !has_context_key {
+        conn.execute("ALTER TABLE activities ADD COLUMN context_key TEXT", [])?;
     }
 
     conn.execute(
@@ -134,6 +153,7 @@ mod tests {
         let columns = activity_columns(&conn);
 
         assert!(columns.iter().any(|column| column == "activity_type"));
+        assert!(columns.iter().any(|column| column == "context_key"));
         assert!(columns.iter().any(|column| column == "duration_seconds"));
         assert!(!columns.iter().any(|column| column.contains("url")));
     }

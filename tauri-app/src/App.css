@@ -1,5 +1,5 @@
 /**
- * App.css – zentraler Einstieg für alle Styles.
+ * App.css - zentraler Einstieg für alle Styles.
  * Globale Design-Tokens und komponentenspezifische Styles aus styles/.
  */
 
@@ -19,4 +19,5 @@
 @import "./styles/charts.css";
 @import "./styles/report.css";
 @import "./styles/dialog.css";
+@import "./styles/info-hint.css";
 @import "./styles/toast.css";

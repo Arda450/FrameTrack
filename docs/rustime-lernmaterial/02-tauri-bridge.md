@@ -4,7 +4,7 @@ frametrack ist eine **Tauri-App**: React im WebView, Logik in Rust. Die Brücke 
 
 ---
 
-## 1. Command – Frontend ruft Rust auf
+## 1. Command - Frontend ruft Rust auf
 
 ### TypeScript (Frontend)
 
@@ -59,7 +59,7 @@ pub fn get_activities_page(
 
 ---
 
-## 2. Event – Rust pusht zur UI
+## 2. Event - Rust pusht zur UI
 
 Wenn der Tracking-Loop **alle 2 s** sampled, soll die Tabelle nicht bei jedem Sample neu laden. Nur bei **Fensterwechsel**:
 
@@ -91,7 +91,7 @@ const unlisten = await listen<Activity>("new-activity", () => {
 Rust-Structs, die **nur für Transport** zur UI dienen:
 
 ```rust
-// dto/activity.rs – Idee
+// dto/activity.rs - Idee
 pub struct ActivityDto {
     pub title: String,
     pub timestamp: u64,

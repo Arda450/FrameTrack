@@ -2,7 +2,7 @@
 /// <reference path="./stubs.d.ts" />
 
 /**
- * VEREINFACHT – React-State-Muster wie in App.tsx / OverviewPanel.tsx
+ * VEREINFACHT - React-State-Muster wie in App.tsx / OverviewPanel.tsx
  * Lernbeispiel (Typen via stubs.d.ts); echte App: tauri-app/
  */
 

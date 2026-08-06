@@ -127,3 +127,13 @@ pub fn get_project_by_id(conn: &Connection, project_id: i64) -> Result<Option<Db
 
     Ok(project)
 }
+
+/// Prüft, ob ein Projekt noch in der Datenbank existiert (z. B. vor Activity-Inserts).
+pub fn project_exists(conn: &Connection, project_id: i64) -> Result<bool, DbError> {
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM projects WHERE id = ?1",
+        params![project_id],
+        |row| row.get(0),
+    )?;
+    Ok(count > 0)
+}

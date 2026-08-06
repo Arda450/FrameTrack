@@ -1,5 +1,5 @@
 /**
- * buttons.css – Globale Button- und Input-Styles
+ * buttons.css - Globale Button- und Input-Styles
  * Komponenten: OverviewPanel, SettingsPanel, Sidebar, Dialoge, …
  * Klassen: button, button.danger, button[disabled]
  */
@@ -13,7 +13,7 @@ input {
   font-weight: 650;
   color: var(--text);
   background: var(--surface);
-  transition: 120ms ease;
+  transition: var(--hover-transition);
   outline: none;
 }
 
@@ -31,7 +31,7 @@ button {
 
 button:not(:disabled):hover {
   border-color: var(--muted);
-  filter: brightness(1.1);
+  filter: var(--hover-filter);
 }
 
 button:not(:disabled):active {
@@ -40,7 +40,7 @@ button:not(:disabled):active {
 
 /* SettingsPanel: Löschen-Buttons */
 button.danger:not(:disabled):hover {
-  background: rgba(238, 85, 68, 0.1);
+  border-color: var(--danger);
 }
 
 button:focus-visible {

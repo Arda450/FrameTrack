@@ -1,5 +1,5 @@
 /**
- * app-sidebar.css – Linke Navigationssäule
+ * app-sidebar.css - Linke Navigationssäule
  * Komponente: layout/AppSidebar.tsx
  */
 
@@ -74,10 +74,11 @@
   background: var(--surface);
   cursor: pointer;
   text-align: left;
+  transition: var(--hover-transition);
 }
 
 .appSidebarNavItem:hover {
-  filter: brightness(1.06);
+  filter: var(--hover-filter);
 }
 
 .appSidebarNavItemActive {
@@ -129,6 +130,7 @@
   background: transparent;
   color: var(--muted);
   cursor: pointer;
+  transition: var(--hover-transition);
 }
 
 .appSidebarEditButton:hover,
@@ -136,6 +138,7 @@
   color: var(--text);
   border-color: var(--border);
   background: var(--surface);
+  filter: var(--hover-filter);
 }
 
 .appSidebarProjectRow {
@@ -145,10 +148,11 @@
   border-radius: 6px;
   background: var(--surface);
   border: 1px solid transparent;
+  transition: var(--hover-transition);
 }
 
 .appSidebarProjectRow:hover {
-  filter: brightness(1.05);
+  filter: var(--hover-filter);
 }
 
 .appSidebarProjectRowActive {
@@ -255,8 +259,7 @@
 }
 
 .appSidebarRenameSelectedButton:not(:disabled):hover {
-  color: var(--text);
-  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  filter: var(--hover-filter);
 }
 
 .appSidebarDeleteSelectedButton {
@@ -269,19 +272,13 @@
 }
 
 .appSidebarDeleteSelectedButton:not(:disabled):hover {
-  color: var(--text);
-  background: color-mix(in srgb, var(--danger) 20%, var(--surface));
+  filter: var(--hover-filter);
 }
 
 .appSidebarProjectRowAdd {
   border-style: dashed;
   border-color: color-mix(in srgb, var(--border) 80%, transparent);
-  background: transparent;
-}
-
-.appSidebarProjectRowAdd:hover {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  background: var(--surface);
 }
 
 .appSidebarProjectIconAdd {
@@ -290,18 +287,8 @@
   background: transparent;
 }
 
-.appSidebarProjectRowAdd:hover .appSidebarProjectIconAdd {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-}
-
 .appSidebarNewProject {
   color: var(--muted);
-}
-
-.appSidebarProjectRowAdd:hover .appSidebarNewProject {
-  color: var(--text);
 }
 
 .appSidebarError {

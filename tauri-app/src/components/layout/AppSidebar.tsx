@@ -1,11 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  ChartBar,
-  Pencil,
-  Settings,
-  Trash2,
-  X,
-} from "lucide-react";
+import { ChartBar, Pencil, Settings, Trash2, X } from "lucide-react";
 import {
   deleteProject,
   getProjects,
@@ -18,6 +12,10 @@ import { RenameProjectDialog } from "../dialogs/RenameProjectDialog";
 import { AppIcon } from "../shared/AppIcon";
 import { useToast } from "../toast/ToastContext";
 import { apiErrorMessage } from "../../utils/apiError";
+import {
+  toastProjectDeleted,
+  toastProjectsDeletedDetail,
+} from "../../utils/toastProjectMessages";
 import { ProjectList } from "./ProjectList";
 import { buildDeleteProjectDescription } from "./deleteProjectDialogDescription";
 
@@ -129,10 +127,12 @@ export function AppSidebar({
       setIsEditing(false);
 
       if (deletedProjects.length === 1) {
-        toast.success(`Projekt ${deletedProjects[0].name} gelöscht`);
+        toast.success(toastProjectDeleted(deletedProjects[0].name));
       } else {
         toast.success(`${deletedProjects.length} Projekte gelöscht`, {
-          detail: deletedProjects.map((project) => project.name).join(", "),
+          detail: toastProjectsDeletedDetail(
+            deletedProjects.map((project) => project.name),
+          ),
         });
       }
     } catch (e) {

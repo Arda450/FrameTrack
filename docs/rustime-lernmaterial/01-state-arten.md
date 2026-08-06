@@ -12,7 +12,7 @@ In frametrack gibt es **mehrere „Zustände“ gleichzeitig**. Sie leben an ver
 ### Einfaches Beispiel
 
 ```tsx
-// Nur zur Erklärung – vereinfachtes Muster aus App.tsx
+// Nur zur Erklärung - vereinfachtes Muster aus App.tsx
 const [isTracking, setIsTracking] = useState(false);
 const [activeProject, setActiveProject] = useState<Project | null>(null);
 const [tableRevision, setTableRevision] = useState(0);
@@ -80,7 +80,7 @@ pub fn is_tracking(state: State<TrackingState>) -> Result<bool, ApiError> {
 
 ---
 
-## 3. `TrackingState` – die drei Felder
+## 3. `TrackingState` - die drei Felder
 
 ```rust
 pub struct TrackingState {
@@ -90,7 +90,7 @@ pub struct TrackingState {
 }
 ```
 
-### 3a. `AtomicBool` – läuft Tracking?
+### 3a. `AtomicBool` - läuft Tracking?
 
 ```rust
 // Start
@@ -112,7 +112,7 @@ state.is_running.store(false, Ordering::SeqCst);
 | `AtomicBool`       | Thread-sicherer Schalter an/aus       |
 | `Ordering::SeqCst` | Strikte Sichtbarkeit zwischen Threads |
 
-### 3b. `Arc<Mutex<Connection>>` – SQLite
+### 3b. `Arc<Mutex<Connection>>` - SQLite
 
 ```rust
 let db_conn = state.db.lock().map_err(|_| ...)?;
@@ -128,7 +128,7 @@ insert_activity_with_project(&db_conn, &activity, project_id)?;
 
 Ohne `Mutex` wären parallele Zugriffe von UI-Command und Tracking-Loop **unsicher**.
 
-### 3c. `Arc<Mutex<Option<(i64, String)>>>` – aktives Projekt
+### 3c. `Arc<Mutex<Option<(i64, String)>>>` - aktives Projekt
 
 ```rust
 // Option = vielleicht kein Projekt gewählt
@@ -140,7 +140,7 @@ Backend speichert die Projekt-ID für Inserts im Tracking-Loop. Das Frontend hat
 
 ---
 
-## 4. Zwei „aktive Projekt“-States – warum?
+## 4. Zwei „aktive Projekt“-States - warum?
 
 | Ort                                   | Zweck                                         |
 | ------------------------------------- | --------------------------------------------- |
@@ -161,7 +161,7 @@ const [timeSeriesByCategory, setTimeSeriesByCategory] = useState<...>([]);
 const [chartView, setChartView] = useState<"pie" | "timeseries">("pie");
 ```
 
-**Nicht** in `App.tsx` – weil nur die Übersicht sie braucht (Kapselung).
+**Nicht** in `App.tsx` - weil nur die Übersicht sie braucht (Kapselung).
 
 `useRef` für `chartsLoadedRef`: Wert ändert sich, **ohne** Re-Render auszulösen (nur interne Logik).
 
