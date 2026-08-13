@@ -1,12 +1,16 @@
+//! Fensteraktivität als Kernmodell für Tracking und Persistenz.
+
 use crate::ActivityType;
 use serde::Serialize;
 
+/// Eine erfasste Fensteraktivität mit abgeleiteten Metadaten.
 #[derive(Clone, Serialize)]
 pub struct WindowActivity {
     pub title: String,
-    pub timestamp: u64, // unix timestamp in seconds
-    /// Bereits beim Sampling abgeleitet; enthält niemals die Browser-URL.
+    /// Unix Zeitstempel in Sekunden.
+    pub timestamp: u64,
+    /// Beim Sampling abgeleitete Klasse; enthält niemals die Browser URL.
     pub activity_type: ActivityType,
-    /// Stabiler Kontext für Charts (z. B. «Reddit»), ohne URL zu persistieren.
+    /// Stabiler Kontext für Charts, ohne URL zu persistieren.
     pub context_key: String,
 }

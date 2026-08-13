@@ -16,9 +16,9 @@ type SettingsDialogProps = {
   notificationSettings: TrackingNotificationSettings;
   onNotificationsEnabledChange: (enabled: boolean) => Promise<boolean>;
   onNotificationIntervalChange: (interval: NotificationIntervalMinutes) => void;
-  onSendTestNotification: () => Promise<boolean>;
 };
 
+/** Dialog mit Einstellungsinhalt als schwebendes Panel. */
 export function SettingsDialog({
   open,
   theme,
@@ -28,7 +28,6 @@ export function SettingsDialog({
   notificationSettings,
   onNotificationsEnabledChange,
   onNotificationIntervalChange,
-  onSendTestNotification,
 }: SettingsDialogProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange} modal={false}>
@@ -53,7 +52,6 @@ export function SettingsDialog({
               notificationSettings={notificationSettings}
               onNotificationsEnabledChange={onNotificationsEnabledChange}
               onNotificationIntervalChange={onNotificationIntervalChange}
-              onSendTestNotification={onSendTestNotification}
             />
           </div>
         </Dialog.Popup>

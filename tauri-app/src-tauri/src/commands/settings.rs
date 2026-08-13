@@ -5,8 +5,8 @@ use tauri::State;
 use crate::commands::tracking::stop_tracking_internal;
 use crate::error::ApiError;
 use frametrack_db::{
-    count_activities, count_projects, delete_all_activities, delete_all_projects,
-    ensure_export_directory,
+    count_activities, count_projects, default_export_directory, delete_all_activities,
+    delete_all_projects,
 };
 use frametrack_tracking::TrackingState;
 
@@ -34,10 +34,10 @@ pub fn get_app_stats(state: State<TrackingState>) -> Result<AppStats, ApiError> 
     })
 }
 
-/// Standardordner für Exporte (`Dokumente/frametrack-exports`); wird bei Bedarf angelegt.
+/// Standardordner für Exporte (`Dokumente/frametrack-exports`) als Pfadvorschlag.
 #[tauri::command]
 pub fn get_export_directory() -> Result<String, ApiError> {
-    let dir = ensure_export_directory().map_err(ApiError::from)?;
+    let dir = default_export_directory().map_err(ApiError::from)?;
     Ok(dir.to_string_lossy().into_owned())
 }
 

@@ -1,3 +1,5 @@
+//! Datenbankpfade, Schema Migration und Verbindungsaufbau.
+
 use std::path::{Path, PathBuf};
 
 use crate::DbError;
@@ -12,6 +14,8 @@ pub fn default_database_path() -> Result<PathBuf, DbError> {
 }
 
 /// Standardordner für Exporte (`Dokumente/frametrack-exports`).
+///
+/// Nur Pfadvorschlag für den Speicherndialog – der Ordner wird nicht vorab angelegt.
 pub fn default_export_directory() -> Result<PathBuf, DbError> {
     let export_dir = dirs::document_dir()
         .ok_or(DbError::AppDirNotFound)?
@@ -19,13 +23,7 @@ pub fn default_export_directory() -> Result<PathBuf, DbError> {
     Ok(export_dir)
 }
 
-/// Erstellt den Standard-Exportordner falls nötig und gibt den Pfad zurück.
-pub fn ensure_export_directory() -> Result<PathBuf, DbError> {
-    let dir = default_export_directory()?;
-    std::fs::create_dir_all(&dir)?;
-    Ok(dir)
-}
-
+/// Öffnet die Standard SQLite Datei im Dokumente Ordner.
 pub fn init_database() -> Result<Connection, DbError> {
     open_database(&default_database_path()?)
 }
@@ -47,6 +45,7 @@ pub fn init_in_memory_database() -> Result<Connection, DbError> {
     Ok(conn)
 }
 
+/// Erstellt Tabellen, Indizes und führt Spaltenmigrationen aus.
 fn apply_schema(conn: &Connection) -> Result<(), DbError> {
     conn.execute("PRAGMA foreign_keys = ON", [])?;
 
@@ -127,6 +126,7 @@ mod tests {
     use super::apply_schema;
     use rusqlite::Connection;
 
+    /// Liest Spaltennamen der Tabelle `activities` für Migrationstests.
     fn activity_columns(conn: &Connection) -> Vec<String> {
         let mut stmt = conn.prepare("PRAGMA table_info(activities)").unwrap();
         stmt.query_map([], |row| row.get::<_, String>(1))
@@ -135,6 +135,7 @@ mod tests {
             .unwrap()
     }
 
+    /// Prüft, dass abgeleitete Spalten migriert werden, URLs aber nicht persistiert.
     #[test]
     fn migration_adds_derived_type_but_no_url_column() {
         let conn = Connection::open_in_memory().unwrap();

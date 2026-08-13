@@ -3,6 +3,7 @@
 //! Jedes Modul gruppiert zusammengehörige #tauri::command - Funktionen.
 //! Registrierung aller Commands erfolgt in lib.rs via invoke_handler.
 
+mod aggregation;
 pub mod export;
 pub mod projects;
 pub mod report;

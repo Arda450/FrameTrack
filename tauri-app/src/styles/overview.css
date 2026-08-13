@@ -160,11 +160,25 @@
 
 .appOverview h2 {
   margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .appOverviewSubtitle {
   margin: 4px 0 0;
   color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.appOverview .overviewStatCards strong {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.appOverview .chartModeSwitch button {
+  font-size: 0.9rem;
 }
 
 .appOverviewChartSection {

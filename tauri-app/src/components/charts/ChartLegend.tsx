@@ -13,11 +13,13 @@ type Props = {
   onEntrySelect?: (name: string | null) => void;
 };
 
+/** Kürzt lange Legendenbeschriftungen mit Auslassungspunkten. */
 function truncateLabel(name: string, maxLen = 36): string {
   if (name.length <= maxLen) return name;
   return `${name.slice(0, maxLen - 1)}…`;
 }
 
+/** Zeigt Kategorien mit Farbe, Anteil und optionalem Filter. */
 function ChartLegendInner({
   entries,
   viewLabel,
@@ -59,8 +61,8 @@ function ChartLegendInner({
             <InfoHint label="Legende filtern">
               {hasFilter ? (
                 <>
-                  Aktuell nur <strong>{selectedEntry}</strong>. Nochmals
-                  tippen, um alle Kontexte anzuzeigen.
+                  Aktuell nur <strong>{selectedEntry}</strong>. Nochmals tippen,
+                  um alle Kontexte anzuzeigen.
                 </>
               ) : (
                 <>

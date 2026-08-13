@@ -1,6 +1,7 @@
-// Prevents additional console window on Windows in release, DO NOT REMOVE!!
+// Verhindert zusätzliches Konsolenfenster unter Windows im Release Build.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+/// Startet die FrameTrack Desktop Anwendung.
 fn main() {
     tauri_app_lib::run()
 }

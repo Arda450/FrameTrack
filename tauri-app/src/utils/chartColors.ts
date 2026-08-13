@@ -17,6 +17,7 @@ const CHART_COLORS_FALLBACK = [
   "#2DD4BF",
 ] as const;
 
+/** Liest eine Chart Farbe aus CSS Variablen. */
 function readChartCssColor(index: number): string | null {
   if (typeof document === "undefined") return null;
   const raw = getComputedStyle(document.documentElement)
@@ -25,7 +26,7 @@ function readChartCssColor(index: number): string | null {
   return raw || null;
 }
 
-/** Farbe für Index - identisch zur Sidebar-Projektreihenfolge. */
+/** Farbe für Index, identisch zur Sidebar Projektreihenfolge. */
 export function colorForCategoryIndex(index: number): string {
   return (
     readChartCssColor(index) ??
@@ -33,6 +34,7 @@ export function colorForCategoryIndex(index: number): string {
   );
 }
 
+/** Liefert die Farbe für einen Kategorienamen. */
 export function colorForCategory(
   name: string,
   orderedNames: readonly string[],
@@ -52,6 +54,7 @@ export function buildProjectColorMap(
   return map;
 }
 
+/** Bestimmt die Balkenfarbe für einen Eintrag. */
 export function resolveBarColor(
   name: string,
   options: {
@@ -97,6 +100,3 @@ export const chartTooltipStyle = {
     marginBottom: "3px",
   },
 } as const;
-
-// Legacy-Export für bestehende Imports
-export const CHART_COLORS = CHART_COLORS_FALLBACK;

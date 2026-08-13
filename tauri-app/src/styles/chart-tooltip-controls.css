@@ -1,0 +1,91 @@
+/**
+ * Zuständig für Diagrammhinweise und Ansichtssteuerung.
+ */
+
+/* --- ChartTooltip.tsx (Recharts Tooltip) --- */
+.chartTooltip {
+  box-sizing: border-box;
+  max-width: min(380px, 92vw);
+}
+
+.chartTooltipTitle {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.chartTooltipList {
+  /* outline: 5px solid red; */
+
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: visible;
+  max-height: none;
+}
+
+.chartTooltipRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.chartTooltipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 0.35em;
+}
+
+.chartTooltipName {
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.chartTooltipValue {
+  color: var(--muted);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* --- OverviewPanel: Umschalter Zeitverteilung / Zeitverlauf --- */
+.chartViewSwitch {
+  display: flex;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.chartViewBtn {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--muted);
+  background: var(--surface);
+  cursor: pointer;
+  transition: var(--hover-transition);
+}
+
+.chartViewBtn:hover {
+  color: var(--text);
+  filter: var(--hover-filter);
+}
+
+.chartViewBtnActive {
+  color: var(--text);
+  border-color: var(--accent);
+  background: var(--surface-strong);
+}

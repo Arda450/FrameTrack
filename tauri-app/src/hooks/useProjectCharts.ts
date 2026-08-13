@@ -14,6 +14,7 @@ export const PROJECT_CHART_OPTIONS = {
   topN: 10,
 } as const;
 
+/** Lädt Pie und Zeitverlauf für die Projekt Übersicht. */
 export function useProjectCharts(
   projectId: number | null,
   revision: number,

@@ -34,6 +34,7 @@ const ROW_HEIGHT_PX = 36;
 const CHART_PAD_PX = 16;
 const DEFAULT_Y_AXIS_WIDTH = 140;
 
+/** Bereitet Balkendiagramm Zeilen aus Verweildauer Segmenten vor. */
 function toChartRows(
   items: DwellSegment[],
   formatLabel: (name: string) => string,
@@ -48,6 +49,7 @@ function toChartRows(
     }));
 }
 
+/** Horizontales Balkendiagramm für Verweildauer je Eintrag. */
 function ProjectBarChartInner({
   items,
   formatLabel = (name: string) => name,

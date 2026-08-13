@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import type { DailyReport, WeeklyReport } from "../types";
 import {
   addDaysIso,
@@ -21,30 +20,23 @@ import {
   DAILY_TIMELINE_BUCKET_SECONDS,
   WEEKLY_TIMELINE_BUCKET_SECONDS,
 } from "./reportConfig";
-import type { ReportBodyLabels } from "./ReportBody";
-import type { ReportKpi } from "./ReportBody";
+import type {
+  PeriodReportMode,
+  ReportBodyLabels,
+  ReportKpi,
+} from "./reportTypes";
 
-import type { ReportExportApi } from "./ReportBody";
-
-export type PeriodReportMode = "daily" | "weekly";
-
-export type PeriodReportViewProps = {
-  projectId: number;
-  projectName: string;
-  dwellRevision: number;
-  onExportApiChange?: (api: ReportExportApi | null) => void;
-};
+export type { PeriodReportMode, PeriodReportViewProps } from "./reportTypes";
 
 type PeriodReportKindConfig = {
   mode: PeriodReportMode;
-  invokeCommand: "get_daily_report" | "get_weekly_report";
   loadErrorMessage: string;
   loadingMessage: string;
   timelineBucketSeconds: number;
-  trimLeadingEmptyBuckets: boolean;
   labels: ReportBodyLabels;
 };
 
+/** Erstellt UI Beschriftungen für Tages oder Wochenberichte. */
 function buildLabels(
   mode: PeriodReportMode,
   timelineHint: string,
@@ -82,11 +74,9 @@ export const PERIOD_KIND_CONFIG: Record<
 > = {
   daily: {
     mode: "daily",
-    invokeCommand: "get_daily_report",
     loadErrorMessage: "Tagesbericht konnte nicht geladen werden.",
     loadingMessage: "Lade Tagesbericht…",
     timelineBucketSeconds: DAILY_TIMELINE_BUCKET_SECONDS,
-    trimLeadingEmptyBuckets: false,
     labels: buildLabels(
       "daily",
       `Aktive Zeit pro ${formatBucketLabel(DAILY_TIMELINE_BUCKET_SECONDS)}-Fenster.`,
@@ -94,12 +84,9 @@ export const PERIOD_KIND_CONFIG: Record<
   },
   weekly: {
     mode: "weekly",
-    invokeCommand: "get_weekly_report",
     loadErrorMessage: "Wochenbericht konnte nicht geladen werden.",
     loadingMessage: "Lade Wochenbericht…",
     timelineBucketSeconds: WEEKLY_TIMELINE_BUCKET_SECONDS,
-    // Immer alle 7 Tage (Mo-So) zeigen, auch führende/leere Tage.
-    trimLeadingEmptyBuckets: false,
     labels: buildLabels(
       "weekly",
       "Geschätzte aktive Zeit je Kalendertag (Mo-So).",
@@ -107,16 +94,18 @@ export const PERIOD_KIND_CONFIG: Record<
   },
 };
 
+/** Liefert die Meldung für einen leeren Berichtszeitraum. */
 export function periodEmptyMessage(
   mode: PeriodReportMode,
   projectName: string,
 ): string {
   if (mode === "daily") {
-    return `Für diesen Tag liegen keine Aktivitäten für das Projekt "${projectName}" vor.`;
+    return `Für diesen Tag liegen keine Aktivitäten für den Projektumfang "${projectName}" vor.`;
   }
-  return `Für diese Woche liegen keine Aktivitäten für das Projekt "${projectName}" vor.`;
+  return `Für diese Woche liegen keine Aktivitäten für den Projektumfang "${projectName}" vor.`;
 }
 
+/** Ermittelt die stärkste Kategorie mit Anteil. */
 function topCategoryShare(
   report: DailyReport | WeeklyReport,
 ): { name: string; pct: number } | null {
@@ -132,6 +121,7 @@ function topCategoryShare(
   };
 }
 
+/** Erstellt die Kurz-Zusammenfassung für den Tagesbericht. */
 export function buildDailyNarrative(
   report: DailyReport,
   _isoDate: string,
@@ -147,6 +137,7 @@ export function buildDailyNarrative(
   return `Ca. ${active} aktiv gearbeitet - Schwerpunkt: ${top.name} (${top.pct} %).`;
 }
 
+/** Erstellt die Kurz-Zusammenfassung für den Wochenbericht. */
 export function buildWeeklyNarrative(
   report: WeeklyReport,
   _weekStart: string,
@@ -173,6 +164,7 @@ export function buildWeeklyNarrative(
   return text;
 }
 
+/** Baut die KPI Karten für den Tagesbericht. */
 export function buildDailyKpis(report: DailyReport): ReportKpi[] {
   return [
     {
@@ -193,6 +185,7 @@ export function buildDailyKpis(report: DailyReport): ReportKpi[] {
   ];
 }
 
+/** Baut die KPI Karten für den Wochenbericht. */
 export function buildWeeklyKpis(report: WeeklyReport): ReportKpi[] {
   const avgPerDay =
     report.active_days > 0
@@ -225,8 +218,6 @@ export function createDailyNavState(anchor: string) {
     rangeStart: anchor,
     rangeEnd: anchor,
     subtitle: `${formatIsoDateLong(anchor)}`,
-    reportSubtitle: (projectName: string) =>
-      `${formatIsoDateLong(anchor)} · ${projectName}`,
     queryKeySuffix: anchor,
     nav: {
       dateFieldLabel: "Bericht für",
@@ -241,8 +232,8 @@ export function createDailyNavState(anchor: string) {
       stepNext: (d: string) => clampIsoDateToToday(addDaysIso(d, 1)),
       jumpToCurrent: () => today,
     },
-    invokeArgs: (projectId: number, date: string) => ({
-      projectId,
+    invokeArgs: (projectIds: number[], date: string) => ({
+      projectIds,
       date,
       fromTs: dateInputToFromTs(date),
       toTs: dateInputToToTs(date),
@@ -254,14 +245,11 @@ export function createDailyNavState(anchor: string) {
 export function createWeeklyNavState(anchor: string) {
   const today = todayIsoDate();
   const weekStart = weekStartIso(anchor);
-  // Ganze Woche Mo-So (nicht auf heute begrenzt), damit der Zeitverlauf alle 7 Tage zeigt.
   const weekEnd = weekEndIso(anchor);
   return {
     rangeStart: weekStart,
     rangeEnd: weekEnd,
     subtitle: formatWeekLabel(anchor),
-    reportSubtitle: (projectName: string) =>
-      `${formatWeekLabel(anchor)} · ${projectName}`,
     queryKeySuffix: `${weekStart}|${weekEnd}`,
     nav: {
       dateFieldLabel: "Woche mit",
@@ -277,12 +265,12 @@ export function createWeeklyNavState(anchor: string) {
       jumpToCurrent: () => today,
     },
     invokeArgs: (
-      projectId: number,
+      projectIds: number[],
       _anchor: string,
       start: string,
       end: string,
     ) => ({
-      projectId,
+      projectIds,
       weekStart: start,
       weekEnd: end,
       fromTs: dateInputToFromTs(start),
@@ -290,12 +278,3 @@ export function createWeeklyNavState(anchor: string) {
     }),
   };
 }
-
-export type PeriodExtraSectionsContext = {
-  projectName: string;
-};
-
-export type PeriodExtraSectionsBuilder = (
-  report: DailyReport | WeeklyReport,
-  ctx: PeriodExtraSectionsContext,
-) => ReactNode;

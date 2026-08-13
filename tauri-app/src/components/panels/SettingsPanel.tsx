@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { clearAllActivities, clearAllProjects } from "../../api/settings";
 import { AppIcon } from "../shared/AppIcon";
+import { InfoHint } from "../shared/InfoHint";
 import { ConfirmDialog } from "../dialogs/ConfirmDialog";
 import { useToast } from "../toast/ToastContext";
-import { Bell, Database, Moon, Sun } from "lucide-react";
+import { Bell, Database, Moon, ShieldCheck, Sun } from "lucide-react";
 import {
   NOTIFICATION_INTERVALS,
   type NotificationIntervalMinutes,
@@ -17,9 +18,9 @@ type SettingsPanelProps = {
   notificationSettings: TrackingNotificationSettings;
   onNotificationsEnabledChange: (enabled: boolean) => Promise<boolean>;
   onNotificationIntervalChange: (interval: NotificationIntervalMinutes) => void;
-  onSendTestNotification: () => Promise<boolean>;
 };
 
+/** Einstellungen für Theme, Benachrichtigungen und Datenbereinigung. */
 export function SettingsPanel({
   theme,
   onThemeChange,
@@ -27,7 +28,6 @@ export function SettingsPanel({
   notificationSettings,
   onNotificationsEnabledChange,
   onNotificationIntervalChange,
-  onSendTestNotification,
 }: SettingsPanelProps) {
   const toast = useToast();
   const [isClearing, setIsClearing] = useState(false);
@@ -83,20 +83,10 @@ export function SettingsPanel({
     }
   }
 
-  async function sendTestNotification() {
-    setIsUpdatingNotifications(true);
-    const sent = await onSendTestNotification();
-    setIsUpdatingNotifications(false);
-
-    if (!sent) {
-      toast.error("Testbenachrichtigung konnte nicht gesendet werden.");
-    }
-  }
-
   return (
     <section className="container">
       {/* Erscheinungsbild */}
-      <div className="settingsSection">
+      <div className="settingsSection settingsThemeSection">
         <div className="settingRow">
           <div className="settingLabel">
             <h4 style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -129,9 +119,17 @@ export function SettingsPanel({
         </h3>
         <div className="settingRow">
           <div className="settingLabel">
-            <span>Tracking-Erinnerungen</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span>Tracking-Erinnerungen</span>
+              <InfoHint label="Hinweis zu Tracking-Benachrichtigungen">
+                Periodische Erinnerungen erscheinen nach dem gewählten Intervall
+                von 1, 2 oder 4 Stunden. Beim Pausieren oder Stoppen wird nur
+                dann eine Abschlusszusammenfassung angezeigt, wenn mindestens 15
+                Minuten getrackt wurden.
+              </InfoHint>
+            </div>
             <span>
-              Zeigt den Tracking-Status und eine Zusammenfassung in Windows
+              Periodischer Tracking-Status und Zusammenfassung beim Beenden
             </span>
           </div>
           <button
@@ -150,44 +148,54 @@ export function SettingsPanel({
             <span>Während eines laufenden Trackings</span>
           </div>
           <div className="settingControl">
-            <select
-              className="settingsSelect"
-              value={notificationSettings.intervalMinutes}
-              disabled={
-                !notificationSettings.enabled || isUpdatingNotifications
-              }
-              onChange={(event) =>
-                onNotificationIntervalChange(
-                  Number(event.target.value) as NotificationIntervalMinutes,
-                )
-              }
-              aria-label="Intervall für Tracking-Erinnerungen"
-            >
-              {NOTIFICATION_INTERVALS.map((minutes) => (
-                <option key={minutes} value={minutes}>
-                  {minutes === 60 ? "1 Stunde" : `${minutes / 60} Stunden`}
-                </option>
-              ))}
-            </select>
+            <span className="settingsSelectWrap">
+              <select
+                className="settingsSelect"
+                value={notificationSettings.intervalMinutes}
+                disabled={
+                  !notificationSettings.enabled || isUpdatingNotifications
+                }
+                onChange={(event) =>
+                  onNotificationIntervalChange(
+                    Number(event.target.value) as NotificationIntervalMinutes,
+                  )
+                }
+                aria-label="Intervall für Tracking-Erinnerungen"
+              >
+                {NOTIFICATION_INTERVALS.map((minutes) => (
+                  <option key={minutes} value={minutes}>
+                    {minutes === 60 ? "1 Stunde" : `${minutes / 60} Stunden`}
+                  </option>
+                ))}
+              </select>
+            </span>
           </div>
         </div>
-        <div className="settingRow">
-          <div className="settingLabel">
-            <span>Darstellung prüfen</span>
-            <span>Sendet sofort eine Windows-Testbenachrichtigung</span>
-          </div>
-          <div className="settingControl">
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => void sendTestNotification()}
-              disabled={
-                !notificationSettings.enabled || isUpdatingNotifications
-              }
-            >
-              Test senden
-            </button>
-          </div>
+      </div>
+
+      {/* Datenschutz und lokale Speicherung */}
+      <div className="settingsSection">
+        <h3 style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <AppIcon icon={ShieldCheck} size={16} aria-hidden />
+          Datenschutz und lokale Daten
+        </h3>
+        <div className="privacyNotice">
+          <p>
+            FrameTrack verarbeitet Fenstertitel und Aktivitätsdaten
+            ausschliesslich lokal auf diesem Gerät. Es gibt keine
+            Cloud-Synchronisation, Telemetrie oder Übertragung an
+            FrameTrack-Server.
+          </p>
+          <p>
+            Browser-Adressen werden nur flüchtig im Arbeitsspeicher zur
+            Klassifikation verwendet und nicht in der Datenbank gespeichert.
+          </p>
+          <p>
+            Die Datenbank liegt unter{" "}
+            <code>Dokumente/frametrack-data/frametrack.db</code>. Exporte können
+            sensible Fenstertitel enthalten und sollten entsprechend geschützt
+            werden.
+          </p>
         </div>
       </div>
 

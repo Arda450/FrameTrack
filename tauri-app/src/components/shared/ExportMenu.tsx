@@ -19,6 +19,7 @@ type Props = {
   directAction?: boolean;
 };
 
+/** Dropdown oder Direktbutton für Export Aktionen. */
 export function ExportMenu({
   label = "Export",
   items,

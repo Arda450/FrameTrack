@@ -19,6 +19,7 @@ export async function getPreferredExportDirectory(): Promise<string> {
   return getExportDirectory();
 }
 
+/** Merkt sich den Ordner aus einem Exportpfad. */
 export function rememberExportDirectoryFromFilePath(filePath: string): void {
   const dir = dirFromPath(filePath);
   localStorage.setItem(LAST_EXPORT_DIR_KEY, dir);
@@ -57,6 +58,7 @@ export function aggregatedCsvPathBeside(samplesPath: string): string {
   return `${samplesPath}-aggregated.csv`;
 }
 
+/** Erzeugt einen Standard Dateinamen für Exporte. */
 export function defaultExportFileName(
   prefix: string,
   extension: string,

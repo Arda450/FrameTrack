@@ -16,6 +16,7 @@ export type PieSegment = { name: string; value: number };
 
 const RADIAN = Math.PI / 180;
 
+/** Zeigt Prozentwerte innerhalb der Tortenstücke. */
 const renderCustomizedLabel = ({
   cx,
   cy,
@@ -46,7 +47,9 @@ const renderCustomizedLabel = ({
   );
 };
 
+/** Erzeugt eine Sektor Form mit Farbe je Kategorie. */
 function makePieShape(categoryOrder: readonly string[]) {
+  /** Färbt ein Tortensegment anhand der Kategorie. */
   return function PieShape(props: PieSectorShapeProps) {
     const name = (props.payload as PieSegment | undefined)?.name ?? "";
     return <Sector {...props} fill={colorForCategory(name, categoryOrder)} />;
@@ -60,6 +63,7 @@ type Props = {
   emptyHint?: string;
 };
 
+/** Tortendiagramm für Verweildauer je Kategorie. */
 function ActivityPieChartInner({
   data,
   categoryOrder,

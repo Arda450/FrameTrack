@@ -1,7 +1,7 @@
-//! Demo-Daten für UI- und Performance-Tests.
+//! Demo-Daten für UI und Performance Tests.
 //!
 //! Simuliert echtes Tracking: Minutenaggregate in Arbeitsblöcken,
-//! mit Pausen (Nacht, Mittag). Schwerpunkt auf Projekt „frametrack“.
+//! mit Pausen (Nacht, Mittag). Schwerpunkt auf Projekt «Mein Projekt».
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -19,32 +19,58 @@ const POLL_INTERVAL_SECS: u64 = 60;
 const MIN_SAMPLES_PER_TITLE: u64 = 2;
 const MAX_SAMPLES_PER_TITLE: u64 = 5;
 
-const FRAMETRACK_TITLES: &[&str] = &[
-    "lib.rs - frametrack - Visual Studio Code",
-    "OverviewPanel.tsx - frametrack - Visual Studio Code",
-    "dwell.rs - frametrack - Visual Studio Code",
-    "DailyReportView.tsx - frametrack - Visual Studio Code",
-    "Terminal - frametrack",
-    "Pull requests · Arda450/frametrack - GitHub — Mozilla Firefox",
+/// Titel für Projektindex 0 («Mein Projekt») – gemischt, ohne echte Pfade.
+const MAIN_PROJECT_TITLES: &[&str] = &[
+    "Dashboard.tsx - Mein Projekt - Visual Studio Code",
+    "api.ts - Mein Projekt - Visual Studio Code",
+    "styles.css - Mein Projekt - Visual Studio Code",
+    "README.md - Mein Projekt - Visual Studio Code",
+    "Terminal",
+    "Pull requests · demo-user/mein-projekt - GitHub - Mozilla Firefox",
+    "Issues · demo-user/mein-projekt - GitHub - Google Chrome",
+    "Stack Overflow - How to debounce React effects - Mozilla Firefox",
+    "ChatGPT - Mozilla Firefox",
+    "Figma - Wireframes Mein Projekt",
+    "Notion - Sprint Board",
+    "Slack | #dev",
+    "Postman",
+    "Windows Terminal",
 ];
 
-const MPP_TITLES: &[&str] = &[
-    "Major_Project_Proposal.pdf - MPP - Visual Studio Code",
-    "Notion - Major Project",
+/// Titel für Projektindex 1 («Semesterarbeit»).
+const SEMESTER_TITLES: &[&str] = &[
+    "Kapitel 3 - Entwurf.docx - Word",
+    "Literaturverzeichnis.bib - TeXstudio",
+    "Präsentation.pptx - PowerPoint",
+    "Google Docs - Gliederung - Google Chrome",
+    "Zotero",
+    "Notion - Recherche Semesterarbeit",
+    "PDF-XChange Editor - Quellen.pdf",
+    "DeepL Write - Mozilla Firefox",
+    "Outlook",
+    "Zoom Meeting",
 ];
 
-const OTHER_TITLES: &[&str] = &[
-    "YouTube — Mozilla Firefox",
+/// Titel für Projektindex 2 («Nebenprojekt») - Freizeit/Nebenbei.
+const SIDE_TITLES: &[&str] = &[
+    "YouTube - Mozilla Firefox",
     "Discord",
-    "Slack | general",
+    "Spotify",
+    "Steam",
+    "Reddit - r/programming - Google Chrome",
+    "WhatsApp",
+    "Instagram",
     "Windows-Einstellungen",
+    "Fotos",
+    "Microsoft Edge - Nachrichten",
+    "Calculator",
 ];
 
-/// Arbeitsblöcke innerhalb eines Kalendertags (Offset ab Mitternacht, Sekunden).
+/// Arbeitsblock innerhalb eines Kalendertags (Offset ab Mitternacht in Sekunden).
 struct WorkBlock {
     start: u64,
     end: u64,
-    /// 0 = frametrack, 1 = mpp-docs, 2 = nebenprojekt
+    /// 0 = Mein Projekt, 1 = Semesterarbeit, 2 = Nebenprojekt
     project_index: usize,
 }
 
@@ -86,11 +112,13 @@ pub enum SeedTimeMode {
 }
 
 impl Default for SeedTimeMode {
+    /// Standard ist ein rollierendes 24 Stunden Fenster.
     fn default() -> Self {
         Self::RollingHours(24)
     }
 }
 
+/// Optionen für den Demo Seed Lauf.
 #[derive(Debug, Clone)]
 pub struct SeedOptions {
     pub time_mode: SeedTimeMode,
@@ -98,6 +126,7 @@ pub struct SeedOptions {
 }
 
 impl Default for SeedOptions {
+    /// Standard löscht bestehende Daten und seedet 24 Stunden rollierend.
     fn default() -> Self {
         Self {
             time_mode: SeedTimeMode::RollingHours(24),
@@ -131,11 +160,13 @@ impl SeedOptions {
         }
     }
 
+    /// Setzt den Zeitraum auf rollierende Stunden (Abwärtskompatibilität).
     pub fn set_hours_back(&mut self, hours: u64) {
         self.time_mode = SeedTimeMode::RollingHours(hours);
     }
 }
 
+/// Kurzbericht nach einem Demo Seed Lauf.
 #[derive(Debug, Clone)]
 pub struct SeedReport {
     pub projects_created: usize,
@@ -146,6 +177,7 @@ pub struct SeedReport {
     pub calendar_days: Option<u64>,
 }
 
+/// Liefert die aktuelle Unix Zeit in Sekunden.
 fn now_unix() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -153,6 +185,7 @@ fn now_unix() -> u64 {
         .unwrap_or(0)
 }
 
+/// Berechnet Mitternacht eines lokalen Tages als Unix Zeitstempel.
 fn local_midnight_unix(days_ago: i64) -> u64 {
     let today = Local::now().date_naive();
     let date = today - chrono::Duration::days(days_ago);
@@ -163,18 +196,38 @@ fn local_midnight_unix(days_ago: i64) -> u64 {
         .unwrap_or(0)
 }
 
+/// Wählt Fenstertitel Liste passend zum Demo Projektindex.
 fn titles_for_project(project_index: usize) -> &'static [&'static str] {
     match project_index {
-        0 => FRAMETRACK_TITLES,
-        1 => MPP_TITLES,
-        _ => OTHER_TITLES,
+        0 => MAIN_PROJECT_TITLES,
+        1 => SEMESTER_TITLES,
+        _ => SIDE_TITLES,
     }
 }
 
-fn samples_per_title(sample_index: u64) -> u64 {
-    MIN_SAMPLES_PER_TITLE + (sample_index % (MAX_SAMPLES_PER_TITLE - MIN_SAMPLES_PER_TITLE + 1))
+/// Einfacher, deterministischer Pseudozufall (kein externes RNG nötig).
+fn pseudo_rand(seed: u64) -> u64 {
+    seed.wrapping_mul(6364136223846793005).wrapping_add(1)
 }
 
+/// Variiert die Sample Anzahl pro Fenstertitel für realistische Wechsel.
+fn samples_per_title(sample_index: u64) -> u64 {
+    let span = MAX_SAMPLES_PER_TITLE - MIN_SAMPLES_PER_TITLE + 1;
+    MIN_SAMPLES_PER_TITLE + (pseudo_rand(sample_index) % span)
+}
+
+/// Wählt einen Fenstertitel aus der Liste (nicht streng zyklisch).
+fn pick_title(titles: &[&str], sample_index: u64, title_step: usize) -> String {
+    let n = titles.len() as u64;
+    if n == 0 {
+        return "Unbekanntes Fenster".to_string();
+    }
+    let mix = pseudo_rand(sample_index.wrapping_add(title_step as u64 * 17));
+    let idx = (mix as usize) % titles.len();
+    titles[idx].to_string()
+}
+
+/// Fügt Samples für einen Arbeitsblock in die Planungsliste ein.
 fn append_block_samples(
     rows: &mut Vec<(u64, String, usize)>,
     block_start: u64,
@@ -188,18 +241,19 @@ fn append_block_samples(
 
     let titles = titles_for_project(project_index);
     let mut ts = block_start;
-    let mut title_idx = 0usize;
+    let mut title_step = (*global_sample as usize).wrapping_mul(3);
     let mut remaining_in_title = samples_per_title(*global_sample);
+    let mut current_title = pick_title(titles, *global_sample, title_step);
 
     while ts < block_end {
-        let title = titles[title_idx % titles.len()];
-        rows.push((ts, title.to_string(), project_index));
+        rows.push((ts, current_title.clone(), project_index));
 
         ts = ts.saturating_add(POLL_INTERVAL_SECS);
         *global_sample += 1;
         remaining_in_title = remaining_in_title.saturating_sub(1);
         if remaining_in_title == 0 {
-            title_idx += 1;
+            title_step += 1;
+            current_title = pick_title(titles, *global_sample, title_step);
             remaining_in_title = samples_per_title(*global_sample);
         }
     }
@@ -259,6 +313,7 @@ fn plan_calendar_samples(days: u64, now: u64) -> Vec<(u64, String, usize)> {
     rows
 }
 
+/// Schreibt geplante Samples in einer Transaktion in die Datenbank.
 fn insert_planned_samples(
     conn: &Connection,
     planned: &[(u64, String, usize)],
@@ -282,10 +337,11 @@ fn insert_planned_samples(
     Ok(())
 }
 
+/// Demo-Projekte: Anzeigenamen + synthetische Pfade (keine echten PC-Ordner).
 const DEMO_PROJECTS: [(&str, &str); 3] = [
-    ("frametrack", r"C:\repos\frametrack"),
-    ("mpp-docs", r"C:\repos\frametrack\mpp"),
-    ("nebenprojekt", r"C:\dev\side-project"),
+    ("Mein Projekt", "demo://mein-projekt"),
+    ("Semesterarbeit", "demo://semesterarbeit"),
+    ("Nebenprojekt", "demo://nebenprojekt"),
 ];
 
 /// Legt Demo-Projekte an und fügt realistische Aktivitäten in einer Transaktion ein.

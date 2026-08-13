@@ -17,12 +17,7 @@ type CreateProjectDialogProps = {
   onCreated: (project: Project) => void;
 };
 
-/**
-
- * Dialog zum Anlegen eines Projekts per Name (ohne File-Explorer).
-
- */
-
+/** Dialog zum Anlegen eines Projekts per Name. */
 export function CreateProjectDialog({
   open,
 

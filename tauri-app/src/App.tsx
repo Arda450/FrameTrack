@@ -22,6 +22,7 @@ type DataRevisions = {
   projects: number;
 };
 
+/** Hauptkomponente der FrameTrack Desktop App. */
 export default function App() {
   const [isTracking, setIsTracking] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -70,6 +71,7 @@ export default function App() {
       });
   }, []);
 
+  /** Erhöht Revisionszähler für betroffene Datenbereiche. */
   function refresh(...keys: (keyof DataRevisions)[]) {
     setRevisions((current) => {
       const next = { ...current };
@@ -78,12 +80,14 @@ export default function App() {
     });
   }
 
+  /** Setzt App Zustand nach dem Löschen aller Daten zurück. */
   function handleDataCleared() {
     setActiveProject(null);
     setIsTracking(false);
     refresh("activities", "statistics", "projects");
   }
 
+  /** Aktualisiert Zustand nach dem Löschen eines Projekts. */
   function handleProjectDeleted(projectId: number) {
     if (activeProject?.id === projectId) {
       setActiveProject(null);
@@ -92,6 +96,7 @@ export default function App() {
     refresh("activities", "statistics", "projects");
   }
 
+  /** Aktualisiert Zustand nach dem Umbenennen eines Projekts. */
   function handleProjectRenamed(project: Project) {
     if (activeProject?.id === project.id) {
       setActiveProject(project);
@@ -124,6 +129,7 @@ export default function App() {
     };
   }, []);
 
+  /** Startet Tracking und setzt UI Fehler zurück. */
   async function handleStartTracking() {
     try {
       await startTracking();
@@ -138,6 +144,7 @@ export default function App() {
     }
   }
 
+  /** Stoppt Tracking und beendet die Benachrichtigungssitzung. */
   async function handleStopTracking() {
     try {
       await stopTracking();
@@ -152,6 +159,7 @@ export default function App() {
     }
   }
 
+  /** Übernimmt das gewählte Projekt in den App Zustand. */
   function handleProjectSelected(project: Project) {
     setActiveProject(project);
     refresh("projects", "statistics");
@@ -197,7 +205,6 @@ export default function App() {
           onNotificationIntervalChange={
             trackingNotifications.setIntervalMinutes
           }
-          onSendTestNotification={trackingNotifications.sendTestNotification}
         />
 
         <AppOverviewDialog

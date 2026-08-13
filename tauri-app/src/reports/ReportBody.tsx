@@ -1,12 +1,5 @@
 import {
-  exportActivitiesCsvToPaths,
-  exportActivitiesJsonToPath,
-  exportReportPdfToPath,
-} from "../api/export";
-import { getByProjectForRange } from "../api/stats";
-import {
   memo,
-  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -15,9 +8,6 @@ import {
 } from "react";
 import type { ReportCore, WeeklyReport } from "../types";
 import {
-  formatIsoDateLong,
-} from "../utils/dateRange";
-import {
   buildChartLegendEntries,
   mergeCategoryOrder,
 } from "../utils/chartLegend";
@@ -25,106 +15,61 @@ import ActivityPieChart from "../components/charts/PieChart";
 import type { PieSegment } from "../components/charts/PieChart";
 import TimeSeriesChart from "../components/charts/TimeSeriesChart";
 import ChartLegend from "../components/charts/ChartLegend";
-import { useToast } from "../components/toast/ToastContext";
-import { formatExportSuccessDetail } from "../utils/exportPath";
-import { fileNameFromPath } from "../utils/fileNameFromPath";
-import {
-  aggregatedCsvPathBeside,
-  defaultExportFileName,
-  pickExportSavePath,
-} from "../utils/exportSaveDialog";
-import {
-  REPORT_DWELL_OPTS,
-  ACTIVE_TIME_MEASUREMENT_HINT,
-  ACTIVE_TIME_MEASUREMENT_HINT_LONG,
-} from "./reportConfig";
-import {
-  buildReportPdf,
-  type ReportPdfTableSection,
-} from "./exportReportPdf";
-import type { PeriodReportMode } from "./periodReportKinds";
+import { ACTIVE_TIME_MEASUREMENT_HINT_LONG } from "./reportConfig";
+import type {
+  PeriodReportMode,
+  ReportActivitiesExportArgs,
+  ReportBodyLabels,
+  ReportExportApi,
+  ReportKpi,
+} from "./reportTypes";
+import { useReportExport } from "./useReportExport";
+import { WeeklyDayTable } from "./WeeklyDayTable";
 
-export type ReportKpi = {
-  value: string;
-  label: string;
-};
-
-export type ReportBodyLabels = {
-  pieTitle: string;
-  pieHint: string;
-  pieLegend: string;
-  pieEmpty: string;
-  activityTypePieTitle: string;
-  activityTypePieHint: string;
-  activityTypePieLegend: string;
-  activityTypePieEmpty: string;
-  timelineTitle: string;
-  timelineHint: string;
-  timelineLegend: string;
-  timelineEmpty: string;
-  exportJson: string;
-  exportCsv: string;
-  exportPdf: string;
-};
-
-export type ReportExportApi = {
-  exportJson: () => void;
-  exportCsv: () => void;
-  exportPdf: () => void;
-  busy: boolean;
-  labels: Pick<ReportBodyLabels, "exportJson" | "exportCsv" | "exportPdf">;
-};
+export type {
+  ReportBodyLabels,
+  ReportExportApi,
+  ReportKpi,
+} from "./reportTypes";
 
 type Props = {
   report: ReportCore;
   isRefreshing: boolean;
   narrativeSummary: string | null;
   timelineBucketSeconds: number;
-  trimLeadingEmptyBuckets?: boolean;
   kpis: ReportKpi[];
   labels: ReportBodyLabels;
   extraSections?: ReactNode;
   reportMode: PeriodReportMode;
   periodLabel: string;
   projectName: string;
-  exportArgs: {
-    projectId: number;
-    fromTs: number;
-    toTs: number;
-    contextQuery: null;
-  };
+  pdfProjectName: string;
+  exportArgs: ReportActivitiesExportArgs;
   onExportApiChange?: (api: ReportExportApi | null) => void;
 };
 
+/** Rendert KPIs, Charts und Export Anbindung für Periodenberichte. */
 function ReportBodyInner({
   report,
   isRefreshing,
   narrativeSummary,
   timelineBucketSeconds,
-  trimLeadingEmptyBuckets = false,
   kpis,
   labels,
   extraSections,
   reportMode,
   periodLabel,
   projectName,
+  pdfProjectName,
   exportArgs,
   onExportApiChange,
 }: Props) {
-  const toast = useToast();
-  const [activeExport, setActiveExport] = useState<
-    "json" | "csv" | "pdf" | null
-  >(null);
   const [focusedTimelineCategory, setFocusedTimelineCategory] = useState<
     string | null
   >(null);
-  // Deferred Rendering: Charts erst nach dem ersten Frame rendern,
-  // damit die UI sofort erscheint und nicht blockiert.
   const [chartsReady, setChartsReady] = useState(false);
 
   useEffect(() => {
-    // requestAnimationFrame sorgt dafür, dass der erste Frame gezeichnet wird,
-    // bevor die schweren Charts gerendert werden.
     const id = requestAnimationFrame(() => setChartsReady(true));
     return () => cancelAnimationFrame(id);
   }, []);
@@ -135,7 +80,6 @@ function ReportBodyInner({
 
   const activityTypeChartRef = useRef<HTMLDivElement>(null);
   const pieChartRef = useRef<HTMLDivElement>(null);
-  const timelinePlotRef = useRef<HTMLDivElement>(null);
 
   const pieSegments: PieSegment[] = useMemo(
     () =>
@@ -199,192 +143,20 @@ function ReportBodyInner({
     [categoryOrder, pieSegments, timeline],
   );
 
-  const exportPdf = useCallback(async () => {
-    try {
-      const targetPath = await pickExportSavePath({
-        title: "PDF speichern",
-        defaultFileName: defaultExportFileName("frametrack-bericht", "pdf"),
-        extension: "pdf",
-        filterName: "PDF",
-      });
-      if (!targetPath) return;
-
-      setActiveExport("pdf");
-
-      const pieSections = [
-        ...(activityTypePieSegments.length > 0
-          ? [
-              {
-                title: labels.activityTypePieTitle,
-                captureEl: activityTypeChartRef.current,
-              },
-            ]
-          : []),
-        ...(pieSegments.length > 0
-          ? [
-              {
-                title: labels.pieTitle,
-                captureEl: pieChartRef.current,
-              },
-            ]
-          : []),
-      ];
-
-      const tables: ReportPdfTableSection[] = [
-        {
-          title: labels.pieTitle,
-          hint: labels.pieHint,
-          items: [...report.by_category],
-          totalSeconds: report.total_active_seconds,
-        },
-      ];
-
-      if (activityTypePieSegments.length > 0) {
-        tables.push({
-          title: labels.activityTypePieTitle,
-          hint: labels.activityTypePieHint,
-          items: [...report.by_activity_type],
-          totalSeconds: report.total_active_seconds,
-        });
-      }
-
-      if (reportMode === "weekly") {
-        const weekly = report as WeeklyReport;
-        if (weekly.by_day.length > 0) {
-          tables.push({
-            title: "Aktivität pro Tag",
-            hint: `Aktive Zeit je Kalendertag für dieses Projekt. ${ACTIVE_TIME_MEASUREMENT_HINT}`,
-            items: [...weekly.by_day],
-            totalSeconds: report.total_active_seconds,
-            formatName: (iso) => formatIsoDateLong(iso),
-          });
-        }
-      }
-
-      try {
-        const byProject = await getByProjectForRange({
-          fromTs: exportArgs.fromTs,
-          toTs: exportArgs.toTs,
-          ...REPORT_DWELL_OPTS,
-        });
-        if (byProject.length > 0) {
-          const projectTotal = byProject.reduce((sum, item) => sum + item.value, 0);
-          tables.push({
-            title:
-              reportMode === "daily"
-                ? "Zeit pro Projekt (gesamter Tag)"
-                : "Zeit pro Projekt (gesamte Woche)",
-            hint:
-              reportMode === "daily"
-                ? "Alle Projekte an diesem Tag."
-                : "Alle Projekte in dieser Woche.",
-            items: byProject,
-            totalSeconds: projectTotal,
-          });
-        }
-      } catch (error) {
-        console.warn("PDF: Projektdaten für Export nicht geladen", error);
-      }
-
-      const pdfBytes = await buildReportPdf({
-        reportType: reportMode,
-        projectName,
-        periodLabel,
-        narrative: narrativeSummary,
-        kpis,
-        estimationHint: ACTIVE_TIME_MEASUREMENT_HINT,
-        pieSections,
-        tables,
-      });
-
-      const path = await exportReportPdfToPath({
-        pdfBytes: Array.from(pdfBytes),
-        targetPath,
-      });
-      toast.success("PDF exportiert", {
-        detail: formatExportSuccessDetail(path),
-      });
-    } catch (e) {
-      console.error("report export pdf failed", e);
-      toast.error("PDF-Export fehlgeschlagen.");
-    } finally {
-      setActiveExport(null);
-    }
-  }, [
-    activityTypePieSegments.length,
-    exportArgs.fromTs,
-    exportArgs.toTs,
+  const { activeExport, exportJson, exportCsv, exportPdf } = useReportExport({
+    exportArgs,
+    labels,
+    report,
+    reportMode,
     kpis,
-    labels.activityTypePieHint,
-    labels.activityTypePieTitle,
-    labels.pieHint,
-    labels.pieTitle,
     narrativeSummary,
     periodLabel,
-    pieSegments.length,
-    projectName,
-    report.by_activity_type,
-    report.by_category,
-    report.total_active_seconds,
-    reportMode,
-    toast,
-  ]);
-
-  const exportJson = useCallback(async () => {
-    try {
-      const targetPath = await pickExportSavePath({
-        title: "JSON speichern",
-        defaultFileName: defaultExportFileName("frametrack-export", "json"),
-        extension: "json",
-        filterName: "JSON",
-      });
-      if (!targetPath) return;
-
-      setActiveExport("json");
-      const path = await exportActivitiesJsonToPath({
-        ...exportArgs,
-        targetPath,
-      });
-      toast.success("JSON exportiert", {
-        detail: formatExportSuccessDetail(path),
-      });
-    } catch (e) {
-      console.error("report export json failed", e);
-      toast.error("JSON-Export fehlgeschlagen.");
-    } finally {
-      setActiveExport(null);
-    }
-  }, [exportArgs, toast]);
-
-  const exportCsv = useCallback(async () => {
-    try {
-      const samplesPath = await pickExportSavePath({
-        title: "CSV Zeiteinträge speichern",
-        defaultFileName: defaultExportFileName("frametrack-samples", "csv"),
-        extension: "csv",
-        filterName: "CSV",
-      });
-      if (!samplesPath) return;
-
-      setActiveExport("csv");
-      const aggregatedPath = aggregatedCsvPathBeside(samplesPath);
-      const result = await exportActivitiesCsvToPaths({
-        ...exportArgs,
-        samplesPath,
-        aggregatedPath,
-      });
-      toast.success("CSV exportiert", {
-        detail: formatExportSuccessDetail(result.samples_path, [
-          fileNameFromPath(result.aggregated_path),
-        ]),
-      });
-    } catch (e) {
-      console.error("report export csv failed", e);
-      toast.error("CSV-Export fehlgeschlagen.");
-    } finally {
-      setActiveExport(null);
-    }
-  }, [exportArgs, toast]);
+    projectName: pdfProjectName,
+    activityTypeChartRef,
+    pieChartRef,
+    hasActivityTypeData: activityTypePieSegments.length > 0,
+    hasCategoryData: pieSegments.length > 0,
+  });
 
   useEffect(() => {
     if (!onExportApiChange) return;
@@ -392,7 +164,7 @@ function ReportBodyInner({
       exportJson: () => void exportJson(),
       exportCsv: () => void exportCsv(),
       exportPdf: () => void exportPdf(),
-      busy: activeExport !== null,
+      busy: activeExport !== null || isRefreshing,
       labels: {
         exportJson: labels.exportJson,
         exportCsv: labels.exportCsv,
@@ -407,6 +179,7 @@ function ReportBodyInner({
     labels.exportCsv,
     labels.exportJson,
     labels.exportPdf,
+    isRefreshing,
     onExportApiChange,
   ]);
 
@@ -449,12 +222,17 @@ function ReportBodyInner({
 
       {extraSections}
 
-      {/* Charts werden erst nach dem ersten Frame gerendert (deferred) */}
+      {reportMode === "weekly" ? (
+        <WeeklyDayTable
+          items={(report as WeeklyReport).by_day}
+          totalSeconds={report.total_active_seconds}
+        />
+      ) : null}
+
       {!chartsReady ? (
         <p className="periodReportMuted">Lade Diagramme…</p>
       ) : (
         <>
-          {/* Beide Pie-Charts nebeneinander (weniger Whitespace) */}
           <div className="periodReportPieRow">
             {activityTypePieSegments.length > 0 && (
               <div className="periodReportChartBlock periodReportPieBlock">
@@ -488,10 +266,7 @@ function ReportBodyInner({
               <h4 className="periodReportChartTitle">{labels.pieTitle}</h4>
               <p className="periodReportChartHint">{labels.pieHint}</p>
               <div className="periodReportChartPane periodReportChartPanePie">
-                <div
-                  ref={pieChartRef}
-                  className="periodReportPdfCapture"
-                >
+                <div ref={pieChartRef} className="periodReportPdfCapture">
                   <ActivityPieChart
                     data={pieSegments}
                     categoryOrder={categoryOrder}
@@ -515,8 +290,7 @@ function ReportBodyInner({
                 data={timeline}
                 categoryOrder={categoryOrder}
                 bucketSeconds={timelineBucketSeconds}
-                trimLeadingEmptyBuckets={trimLeadingEmptyBuckets}
-                plotCaptureRef={timelinePlotRef}
+                trimLeadingEmptyBuckets={false}
                 emptyHint={labels.timelineEmpty}
                 focusedCategory={focusedTimelineCategory}
               />
@@ -531,10 +305,9 @@ function ReportBodyInner({
           </div>
         </>
       )}
-
     </div>
   );
 }
 
-// Memoized Export: Verhindert unnötige Re-Renders bei gleichen Props
+/** Memoisierte Berichtsansicht für Tages und Wochenberichte. */
 export const ReportBody = memo(ReportBodyInner);

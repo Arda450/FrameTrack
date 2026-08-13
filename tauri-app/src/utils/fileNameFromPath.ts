@@ -1,1 +1,0 @@
-export { fileNameFromPath } from "./exportPath";

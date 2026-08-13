@@ -20,6 +20,42 @@
   color: var(--text);
 }
 
+.settingsThemeSection {
+  padding-block: 10px;
+}
+
+.settingsThemeSection .settingRow {
+  padding-block: 0;
+}
+
+.settingsThemeSection h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.privacyNotice {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-strong);
+}
+
+.privacyNotice p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.privacyNotice code {
+  color: var(--text);
+  font-family: var(--font-mono, monospace);
+  overflow-wrap: anywhere;
+}
+
 /* --- Zeile mit Label links, Steuerung rechts --- */
 .settingRow {
   display: flex;
@@ -101,20 +137,33 @@
   transform: translateX(22px);
 }
 
+.settingsSelectWrap {
+  position: relative;
+  display: inline-block;
+}
+
 .settingsSelect {
-  width: 6.5rem;
+  width: 8rem;
+  box-sizing: border-box;
   min-height: 32px;
-  padding: 6px 0.5rem;
+  padding: 6px 1.75rem 6px 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: var(--surface);
+  background-color: var(--surface);
   color: var(--text);
   font-family: inherit;
   font-size: 0.9rem;
   font-weight: 500;
   line-height: 1.2;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
   transition: var(--hover-transition);
+  color-scheme: dark;
+}
+
+.settingsSelect::-ms-expand {
+  display: none;
 }
 
 .settingsSelect:hover:not(:disabled) {
@@ -130,6 +179,35 @@
 .settingsSelect:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.settingsSelectWrap::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  width: 0.75rem;
+  height: 0.75rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+  background-color: var(--muted);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.settingsSelectWrap:has(.settingsSelect:hover:not(:disabled))::after,
+.settingsSelectWrap:has(.settingsSelect:focus-visible)::after {
+  background-color: var(--text);
+}
+
+[data-theme="light"] .settingsSelect {
+  color-scheme: light;
 }
 
 /* --- Zähler Aktivitäten / Projekte --- */

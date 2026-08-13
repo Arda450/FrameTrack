@@ -18,6 +18,7 @@ export type TimeSeriesTooltipBodyProps = {
   bucketSeconds?: number;
 };
 
+/** Rendert den Inhalt des Zeitverlauf Tooltips für Recharts. */
 export function TimeSeriesTooltipBody({
   active,
   payload,
@@ -64,8 +65,6 @@ export function TimeSeriesTooltipBody({
     </div>
   );
 }
-
-export const timeSeriesTooltipWrapperStyle = chartTooltipStyle.wrapperStyle;
 
 export const pieTooltipProps = {
   contentStyle: chartTooltipStyle.contentStyle,

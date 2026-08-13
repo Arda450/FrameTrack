@@ -6,6 +6,7 @@ type AppIconProps = {
   size?: number;
 } & Omit<ComponentProps<LucideIcon>, "ref">;
 
+/** Einheitliches Lucide Icon mit App Standardgrösse. */
 export function AppIcon({
   icon: Icon,
   size = 16,

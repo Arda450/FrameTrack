@@ -7,6 +7,7 @@ type Props = {
   onDismiss: (id: string) => void;
 };
 
+/** Zeigt aktive Toast Meldungen unten rechts an. */
 export function ToastViewport({ toasts, onDismiss }: Props) {
   if (toasts.length === 0) return null;
 
@@ -24,7 +25,9 @@ export function ToastViewport({ toasts, onDismiss }: Props) {
           />
           <div className="toastBody">
             <p className="toastMessage">{toast.message}</p>
-            {toast.detail ? <p className="toastDetail">{toast.detail}</p> : null}
+            {toast.detail ? (
+              <p className="toastDetail">{toast.detail}</p>
+            ) : null}
           </div>
           <button
             type="button"

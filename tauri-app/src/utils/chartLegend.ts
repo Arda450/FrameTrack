@@ -11,6 +11,7 @@ export type ChartLegendEntry = {
   meta: string;
 };
 
+/** Vereinigt Kategorien aus Pie und Zeitverlauf. */
 export function mergeCategoryOrder(
   preferred: readonly string[],
   pie: readonly PieSegment[],
@@ -35,6 +36,7 @@ export function mergeCategoryOrder(
   return out;
 }
 
+/** Summiert Sekunden je Kategorie im Zeitverlauf. */
 export function aggregateTimeSeriesTotals(
   data: readonly CategoryTimeSeriesPoint[],
 ): Map<string, number> {
@@ -47,6 +49,7 @@ export function aggregateTimeSeriesTotals(
   return totals;
 }
 
+/** Baut Einträge für die gemeinsame Chart Legende. */
 export function buildChartLegendEntries(
   categoryOrder: readonly string[],
   view: ChartViewMode,

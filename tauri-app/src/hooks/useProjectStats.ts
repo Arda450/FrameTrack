@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { ProjectStats } from "../types";
 import { apiErrorMessage } from "../utils/apiError";
 
+/** Lädt Detailstatistiken für das aktive Projekt. */
 export function useProjectStats(projectId: number | null, revision: number) {
   const [stats, setStats] = useState<ProjectStats | null>(null);
   const [loaded, setLoaded] = useState(false);

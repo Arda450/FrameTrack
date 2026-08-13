@@ -1,9 +1,9 @@
-// holt den aktiven fenstertitel aus der windows api
-// erzeugt zeitstempel
+//! Fenstererfassung über die Windows API und UI Automation.
 
 use crate::TrackingError;
 use frametrack_core::{
-    category_key_from_title_with_url, classify_activity_type_with_url, ActivityType,
+    category_key_from_title_with_url, classify_activity_type_with_url, is_supported_browser_title,
+    ActivityType,
 };
 use uiautomation::{
     types::{ControlType, Handle, TreeScope, UIProperty},
@@ -12,62 +12,62 @@ use uiautomation::{
 };
 use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowTextW};
 
-/// Ergebnis einer Fenster-Analyse beim Tracking (URL wird nicht persistiert).
+/// Ergebnis einer Fensteranalyse beim Tracking ohne persistierte URL.
 #[derive(Debug, Clone)]
 pub struct WindowAnalysis {
     pub activity_type: ActivityType,
     pub category_key: String,
 }
 
-/// Klassifikator für den Tracking-Thread.
-///
-/// Die UI-Automation-Instanz wird einmal pro Tracking-Lauf initialisiert. Eine
-/// aus der Adressleiste gelesene URL bleibt ausschliesslich in `analyze`.
+/// Klassifikator für den Tracking Thread mit optionaler URL Auslese.
 pub struct ActiveWindowClassifier {
     automation: Option<UIAutomation>,
 }
 
 impl ActiveWindowClassifier {
+    /// Initialisiert UI Automation einmal pro Tracking Lauf.
     pub fn new() -> Self {
         Self {
             automation: UIAutomation::new().ok(),
         }
     }
 
+    /// Analysiert Titel und optionale Browser URL zu Klasse und Kategorie.
     pub fn analyze(&self, title: &str) -> WindowAnalysis {
         let ephemeral_url = self.read_ephemeral_browser_url(title);
-        let activity_type =
-            classify_activity_type_with_url(title, ephemeral_url.as_deref());
-        let category_key =
-            category_key_from_title_with_url(title, ephemeral_url.as_deref());
+        let activity_type = classify_activity_type_with_url(title, ephemeral_url.as_deref());
+        let category_key = category_key_from_title_with_url(title, ephemeral_url.as_deref());
         WindowAnalysis {
             activity_type,
             category_key,
         }
     }
 
+    /// Liefert nur die Tätigkeitsklasse ohne Kategorie Schlüssel.
     pub fn classify(&self, title: &str) -> ActivityType {
         self.analyze(title).activity_type
     }
 
+    /// Liest eine Browser URL nur flüchtig für die aktuelle Analyse.
     fn read_ephemeral_browser_url(&self, title: &str) -> Option<String> {
         if !is_supported_browser_title(title) {
             return None;
         }
         let hwnd = unsafe { GetForegroundWindow() };
-        self.automation.as_ref().and_then(|automation| {
-            try_read_browser_url(automation, hwnd)
-        })
+        self.automation
+            .as_ref()
+            .and_then(|automation| try_read_browser_url(automation, hwnd))
     }
 }
 
 impl Default for ActiveWindowClassifier {
+    /// Erzeugt einen Klassifikator mit frischer UI Automation Instanz.
     fn default() -> Self {
         Self::new()
     }
 }
 
-// Gibt aktuelle Unix-Zeit in Sekunden zurück
+/// Liefert die aktuelle Unix Zeit in Sekunden.
 pub fn current_timestamp() -> u64 {
     use std::time::{SystemTime, UNIX_EPOCH};
     SystemTime::now()
@@ -76,15 +76,16 @@ pub fn current_timestamp() -> u64 {
         .as_secs()
 }
 
-// get the title of the active window
+/// Liest den Titel des aktiven Vordergrundfensters.
 pub fn try_get_active_window_title() -> Result<String, TrackingError> {
     let (_, title) = active_window_and_title()?;
     Ok(title)
 }
 
+/// Liefert Fensterhandle und Titel des aktiven Vordergrundfensters.
 fn active_window_and_title() -> Result<(windows::Win32::Foundation::HWND, String), TrackingError> {
     unsafe {
-        let hwnd = GetForegroundWindow(); // hwnd ist ein handle to the active window, it is a pointer to the window handle
+        let hwnd = GetForegroundWindow();
         if hwnd.0.is_null() {
             return Err(TrackingError::WindowNotFound);
         }
@@ -99,21 +100,7 @@ fn active_window_and_title() -> Result<(windows::Win32::Foundation::HWND, String
     }
 }
 
-fn is_supported_browser_title(title: &str) -> bool {
-    const BROWSER_SUFFIXES: &[&str] = &[
-        "mozilla firefox",
-        "google chrome",
-        "microsoft edge",
-        "brave",
-        "opera",
-        "vivaldi",
-    ];
-    let lower = title.to_lowercase();
-    BROWSER_SUFFIXES
-        .iter()
-        .any(|browser| lower.ends_with(browser))
-}
-
+/// Liest die URL aus der Adressleiste des aktiven Browser Fensters.
 fn try_read_browser_url(
     automation: &UIAutomation,
     hwnd: windows::Win32::Foundation::HWND,
@@ -141,6 +128,7 @@ fn try_read_browser_url(
     })
 }
 
+/// Prüft, ob ein Text wie eine Web URL aussieht.
 fn looks_like_web_url(value: &str) -> bool {
     let trimmed = value.trim();
     if trimmed.is_empty() || trimmed.chars().any(char::is_whitespace) {
@@ -159,6 +147,7 @@ fn looks_like_web_url(value: &str) -> bool {
 mod tests {
     use super::looks_like_web_url;
 
+    /// Prüft URL Erkennung ohne Suchtext als URL.
     #[test]
     fn recognises_web_urls_without_accepting_search_text() {
         assert!(looks_like_web_url("https://example.test/product/42"));

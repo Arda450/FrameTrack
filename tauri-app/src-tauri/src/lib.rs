@@ -1,11 +1,9 @@
-// startpunkt der tauri app. hier befinden sich die main funktionen und die initialisierung der app.
+//! Tauri Backend Einstiegspunkt und Command Registrierung.
 
-// lokale module imports
 mod commands;
 mod dto;
 mod error;
 
-// externe funktionen importieren
 use commands::{
     clear_all_activities, clear_all_projects, create_project, delete_project,
     export_activities_csv_to_paths, export_activities_json_to_path, export_report_pdf_to_path,
@@ -14,51 +12,45 @@ use commands::{
     get_project_stats, get_projects, get_time_series_by_category, get_weekly_report, is_tracking,
     rename_project, set_active_project, show_activities_json, start_tracking, stop_tracking,
 };
-
-// db und tracking state importieren aus den crates
 use frametrack_db::init_database;
 use frametrack_tracking::TrackingState;
 
+/// Startet die Tauri Anwendung mit Datenbank, Plugins und IPC Commands.
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // db initialisieren
     let db = init_database().unwrap_or_else(|e| panic!("Failed to initialize database: {}", e));
 
-    // app builder initialisieren, erzeugt ein neues builder objekt
     tauri::Builder::default()
-        // plugin initialisieren
-        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .manage(TrackingState::new(db))
         .invoke_handler(tauri::generate_handler![
-            // commands registerieren, damit die frontend auf die commands zugreifen kann per invoke
-            set_active_project,             // setzt das aktive projekt
-            create_project,                 // legt projekt per name an
-            delete_project,                 // löscht ein projekt und dessen aktivitäten
-            rename_project,                 // benennt ein projekt um
-            get_projects,                   // listet alle projekte auf
-            get_active_project,             // gibt das aktive projekt zurück
-            start_tracking,                 // startet die tracking funktion
-            stop_tracking,                  // stoppt die tracking funktion
-            get_activities_page,            // paginierte aktivitäten
-            get_daily_report,               // tagesbericht für ein projekt
-            get_weekly_report,              // wochenbericht für ein projekt
-            get_by_project_for_range,       // lazy: zeit pro projekt für zeitraum
-            get_dwell_by_category,          // verweildauer-segmente fürs pie-chart
-            get_time_series_by_category,    // zeitverlauf pro kategorie
-            get_overview_stats,             // kompakte gesamtstatistik aller projekte
-            get_project_stats,              // projektkennzahlen für zeitstatistik
-            is_tracking,                    // prüft ob die tracking funktion läuft
-            show_activities_json,           // zeigt die aktivitäten in einer ui an
-            export_activities_json_to_path, // exportiert aktivitäten als json an zielpfad
-            export_activities_csv_to_paths, // exportiert aktivitäten als csv an zielpfade
-            export_report_pdf_to_path,      // speichert einen bericht als pdf
-            get_app_stats,                  // gibt statistiken über die app zurück
-            get_export_directory,           // standardordner für exporte
-            clear_all_activities,           // löscht alle aktivitäten
-            clear_all_projects,             // löscht alle projekte (und aktivitäten)
+            set_active_project,
+            create_project,
+            delete_project,
+            rename_project,
+            get_projects,
+            get_active_project,
+            start_tracking,
+            stop_tracking,
+            get_activities_page,
+            get_daily_report,
+            get_weekly_report,
+            get_by_project_for_range,
+            get_dwell_by_category,
+            get_time_series_by_category,
+            get_overview_stats,
+            get_project_stats,
+            is_tracking,
+            show_activities_json,
+            export_activities_json_to_path,
+            export_activities_csv_to_paths,
+            export_report_pdf_to_path,
+            get_app_stats,
+            get_export_directory,
+            clear_all_activities,
+            clear_all_projects,
         ])
-        .run(tauri::generate_context!("tauri.conf.json")) //startet die tauri anwendung
+        .run(tauri::generate_context!("tauri.conf.json"))
         .expect("error while running tauri application");
 }

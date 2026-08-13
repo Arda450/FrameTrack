@@ -4,6 +4,7 @@ type BackendApiError = {
   error?: string;
 };
 
+/** Extrahiert Code und Nachricht aus Tauri Fehlern. */
 export function parseApiError(error: unknown): {
   code?: string;
   message: string;
@@ -32,6 +33,7 @@ export function parseApiError(error: unknown): {
   return { message: "Unbekannter Fehler" };
 }
 
+/** Liefert eine lesbare Fehlermeldung für die UI. */
 export function apiErrorMessage(error: unknown, fallback: string): string {
   const parsed = parseApiError(error);
   switch (parsed.code) {

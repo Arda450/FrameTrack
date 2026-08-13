@@ -2,14 +2,15 @@
 
 FrameTrack speichert die produktive Datenbank unter:
 
-`%USERPROFILE%\Documents\frametracka-data\frametrack.db` (Windows)
+`%USERPROFILE%\Documents\frametrack-data\frametrack.db` (Windows)
 
 Das CLI-Tool **`seed-database`** erzeugt **realistische** Demo-Daten:
 
 - **2-Sekunden-Abstand** wie echtes Tracking
 - **Arbeitsblöcke** mit Pausen (Nacht, Mittagspause)
-- Drei Demo-Projekte: **frametrack**, **mpp-docs**, **nebenprojekt**
-- Schwerpunkt auf Projekt **frametrack**
+- Drei Demo-Projekte: **Mein Projekt**, **Semesterarbeit**, **Nebenprojekt**
+- Schwerpunkt auf Projekt **Mein Projekt**
+- Synthetische Pfade (`demo://…`), keine echten PC-Ordner; gemischte Fenstertitel
 
 ## Schnellstart (Tagesberichte)
 
@@ -20,7 +21,7 @@ cargo run -p seed-database -- --days 3
 **Wichtig:** App beim Seed **beenden** (SQLite-Lock).
 
 1. `npm run tauri dev` (in `tauri-app`)
-2. Tab **Projekte** → **frametrack** aktivieren
+2. Tab **Projekte** → **Mein Projekt** aktivieren
 3. Tab **Übersicht** → **Tagesbericht** → heute / gestern durchblättern
 
 Mit `--days 3` liegen Daten auf **heute** (bis jetzt), **gestern** und **vorgestern** — ideal für KPIs, Pie, Zeitverlauf und Top-Kontexte.
@@ -56,13 +57,13 @@ Copy-Item testdata\frametrack-week.db $env:USERPROFILE\Documents\frametrack-data
 
 ## Demo-Inhalt pro Tag (ca.)
 
-| Uhrzeit (lokal) | Projekt      | Fenster (Auszug)          |
-| --------------- | ------------ | ------------------------- |
-| 07:00-11:30     | frametrack   | VS Code, Terminal, GitHub |
-| 12:30-17:00     | frametrack   | VS Code, DailyReportView  |
-| 18:00-19:00     | mpp-docs     | MPP-PDF, Notion           |
-| 19:30-20:25     | nebenprojekt | YouTube, Discord, …       |
-| 20:30-22:00     | frametrack   | Abendsession              |
+| Uhrzeit (lokal) | Projekt        | Fenster (Auszug)                 |
+| --------------- | -------------- | -------------------------------- |
+| 07:00-11:30     | Mein Projekt   | VS Code, Terminal, GitHub, Figma |
+| 12:30-17:00     | Mein Projekt   | VS Code, Slack, ChatGPT          |
+| 18:00-19:00     | Semesterarbeit | Word, Notion, Zotero             |
+| 19:30-20:25     | Nebenprojekt   | YouTube, Discord, Spotify, …     |
+| 20:30-22:00     | Mein Projekt   | Abendsession                     |
 
 ## Zeitverlauf: Bucket-Grösse
 

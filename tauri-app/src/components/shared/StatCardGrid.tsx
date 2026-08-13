@@ -8,6 +8,7 @@ type StatCardGridProps = {
   ariaLabel: string;
 };
 
+/** Raster aus Kennzahlen Karten mit einheitlichem Layout. */
 export function StatCardGrid({ items, ariaLabel }: StatCardGridProps) {
   return (
     <div className="overviewStatCards" aria-label={ariaLabel}>

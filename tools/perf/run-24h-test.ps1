@@ -5,7 +5,7 @@
 .DESCRIPTION
   Startet den Release-Build von FrameTrack und misst in einem festen Intervall
   RAM (Working Set) und CPU-Auslastung - getrennt nach:
-    - App        : der/die Prozess(e) "FrameTrack.exe"
+    - App        : der/die Prozess(e) "tauri-app.exe"
     - WebView2   : die von der App gestarteten "msedgewebview2.exe"-Prozesse
     - Total      : Summe aus App + WebView2
 
@@ -25,7 +25,7 @@
   Projekt waehlen und "Starte Tracking" druecken.
 
 .PARAMETER Exe
-  Pfad zur zu testenden Exe. Standard: target/release/FrameTrack.exe.
+  Pfad zur zu testenden Exe. Standard: target/release/tauri-app.exe.
 
 .PARAMETER IntervalSec
   Mess-Intervall in Sekunden. Standard: 60.
@@ -45,7 +45,7 @@
 #>
 
 param(
-  [string]$Exe = "$PSScriptRoot\..\..\target\release\FrameTrack.exe",
+  [string]$Exe = "$PSScriptRoot\..\..\target\release\tauri-app.exe",
   [int]$IntervalSec = 60,
   [double]$DurationHours = 24,
   [string]$OutCsv = ""

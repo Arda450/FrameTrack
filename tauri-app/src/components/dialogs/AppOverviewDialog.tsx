@@ -30,6 +30,7 @@ type AppOverviewDialogProps = {
 type ChartMode = "bar" | "timeseries";
 const BUCKET_SECONDS = 15 * 60;
 
+/** Dialog mit Appweiter Übersicht und Projektstatistiken. */
 export function AppOverviewDialog({
   open,
   dwellRevision,
@@ -255,6 +256,7 @@ export function AppOverviewDialog({
   );
 }
 
+/** Platzhalter während Übersichtsdaten geladen werden. */
 function OverviewSkeleton() {
   return (
     <div className="chartSkeleton" role="status" aria-label="Übersicht laden">

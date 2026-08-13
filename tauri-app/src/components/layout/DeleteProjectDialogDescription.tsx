@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
 import type { Project } from "../../types";
 
+/** Hebt den Projektnamen im Löschdialog hervor. */
 function ProjectName({ name }: { name: string }) {
   return <strong className="dialogProjectName">{name}</strong>;
 }
 
+/** Erstellt den Beschreibungstext für den Projekt Löschdialog. */
 export function buildDeleteProjectDescription(
   selectedProjects: Project[],
 ): ReactNode {

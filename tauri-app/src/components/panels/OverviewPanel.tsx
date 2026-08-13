@@ -1,34 +1,24 @@
 import { Project, TableExportFilter } from "../../types";
-import {
-  useEffect,
-  useMemo,
-  useState,
-  useCallback,
-  type ReactNode,
-} from "react";
-import ActivityPieChart from "../charts/PieChart";
-import TimeSeriesChart from "../charts/TimeSeriesChart";
-import ChartLegend from "../charts/ChartLegend";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { ActivitiesTable } from "../shared/ActivitiesTable";
 import {
   DailyReportView,
   WeeklyReportView,
 } from "../../reports/PeriodReportView";
-import type { ReportExportApi } from "../../reports/ReportBody";
+import type { ReportExportApi } from "../../reports/reportTypes";
 import { buildChartLegendEntries } from "../../utils/chartLegend";
-import { formatBucketLabel } from "../../utils/timeSeriesBuckets";
 import { FileJson, FileSpreadsheet, FileText } from "lucide-react";
 import { AppIcon } from "../shared/AppIcon";
 import { ExportMenu } from "../shared/ExportMenu";
 import {
-  PROJECT_CHART_BUCKET_SECONDS,
   PROJECT_CHART_VISIBLE_HOURS,
   useProjectCharts,
 } from "../../hooks/useProjectCharts";
 import { useActivityExport } from "../../hooks/useActivityExport";
 import { useProjectStats } from "../../hooks/useProjectStats";
-import { ProjectInfoPanel } from "./ProjectInfoPanel";
-import { InfoHint } from "../shared/InfoHint";
+import { OverviewChartViewButton } from "./OverviewChartViewButton";
+import { OverviewChartSkeleton } from "./OverviewChartSkeleton";
+import { OverviewProjectCharts } from "./OverviewProjectCharts";
 
 type OverviewPanelProps = {
   isTracking: boolean;
@@ -41,6 +31,7 @@ type OverviewPanelProps = {
 type ChartView = "charts" | "daily" | "weekly";
 type ChartMode = "pie" | "timeseries";
 
+/** Hauptpanel mit Charts, Berichten und Aktivitätstabelle für ein Projekt. */
 function OverviewPanel({
   isTracking,
   statusError,
@@ -132,7 +123,11 @@ function OverviewPanel({
             .join(" ")}
         >
           <div className="overviewChartsHeading">
-            <h3>Auswertung des aktiven Projekts</h3>
+            <h3>
+              {chartView === "charts"
+                ? "Auswertung des aktiven Projekts"
+                : "Projektberichte"}
+            </h3>
             {showReportExport && (
               <ExportMenu
                 disabled={!activeProject || reportExport == null}
@@ -169,24 +164,24 @@ function OverviewPanel({
             role="tablist"
             aria-label="Diagrammtyp"
           >
-            <ChartViewButton
+            <OverviewChartViewButton
               active={chartView === "charts"}
               onClick={() => setChartView("charts")}
             >
               Zeitstatistik
-            </ChartViewButton>
-            <ChartViewButton
+            </OverviewChartViewButton>
+            <OverviewChartViewButton
               active={chartView === "daily"}
               onClick={() => setChartView("daily")}
             >
               Tagesbericht
-            </ChartViewButton>
-            <ChartViewButton
+            </OverviewChartViewButton>
+            <OverviewChartViewButton
               active={chartView === "weekly"}
               onClick={() => setChartView("weekly")}
             >
               Wochenbericht
-            </ChartViewButton>
+            </OverviewChartViewButton>
           </div>
 
           {!activeProject ? (
@@ -208,92 +203,25 @@ function OverviewPanel({
           ) : charts.error ? (
             <p className="overviewLoadError">{charts.error}</p>
           ) : !charts.loaded ? (
-            <ChartSkeleton />
+            <OverviewChartSkeleton />
           ) : (
-            <>
-              <div className="chartModeSwitchRow">
-                <div
-                  className="chartModeSwitch"
-                  role="group"
-                  aria-label="Darstellung der Zeitstatistik"
-                >
-                  <button
-                    type="button"
-                    className={chartMode === "pie" ? "active" : ""}
-                    aria-pressed={chartMode === "pie"}
-                    onClick={() => setChartMode("pie")}
-                  >
-                    Zeitverteilung
-                  </button>
-                  <button
-                    type="button"
-                    className={chartMode === "timeseries" ? "active" : ""}
-                    aria-pressed={chartMode === "timeseries"}
-                    onClick={() => setChartMode("timeseries")}
-                  >
-                    Zeitverlauf
-                  </button>
-                </div>
-                <InfoHint
-                  label={
-                    chartMode === "pie"
-                      ? "Hilfe zur Zeitverteilung"
-                      : "Hilfe zum Zeitverlauf"
-                  }
-                >
-                  {chartMode === "pie"
-                    ? `Zeigt die geschätzte Verweildauer je Anwendung im aktiven Projekt (letzte ${PROJECT_CHART_VISIBLE_HOURS} Stunden).`
-                    : `Zeigt die aktive Zeit pro ${formatBucketLabel(PROJECT_CHART_BUCKET_SECONDS)}-Fenster in den letzten ${PROJECT_CHART_VISIBLE_HOURS} Stunden.`}
-                </InfoHint>
-              </div>
-
-              <div className="chartSectionLayout">
-                <ProjectInfoPanel
-                  stats={projectStats.stats}
-                  isTracking={isTracking}
-                  loading={!projectStats.loaded}
-                  error={projectStats.error || null}
-                />
-
-                <div className="chartWithSharedLegend">
-                  <div
-                    className={`chartPane${charts.refreshing ? " chartPaneRefreshing" : ""}`}
-                  >
-                    {chartMode === "pie" ? (
-                      <ActivityPieChart
-                        data={charts.segments}
-                        categoryOrder={charts.categoryOrder}
-                        emptyHint={chartEmptyHint}
-                      />
-                    ) : (
-                      <TimeSeriesChart
-                        data={charts.timeline}
-                        categoryOrder={charts.categoryOrder}
-                        bucketSeconds={PROJECT_CHART_BUCKET_SECONDS}
-                        emptyHint={chartEmptyHint}
-                        focusedCategory={focusedTimelineCategory}
-                      />
-                    )}
-                  </div>
-
-                  <ChartLegend
-                    entries={legendEntries}
-                    viewLabel={legendHint}
-                    variant="compact"
-                    selectedEntry={
-                      chartMode === "timeseries"
-                        ? focusedTimelineCategory
-                        : undefined
-                    }
-                    onEntrySelect={
-                      chartMode === "timeseries"
-                        ? setFocusedTimelineCategory
-                        : undefined
-                    }
-                  />
-                </div>
-              </div>
-            </>
+            <OverviewProjectCharts
+              isTracking={isTracking}
+              chartMode={chartMode}
+              onChartModeChange={setChartMode}
+              segments={charts.segments}
+              timeline={charts.timeline}
+              categoryOrder={charts.categoryOrder}
+              refreshing={charts.refreshing}
+              stats={projectStats.stats}
+              statsLoaded={projectStats.loaded}
+              statsError={projectStats.error || null}
+              legendEntries={legendEntries}
+              legendHint={legendHint}
+              chartEmptyHint={chartEmptyHint}
+              focusedTimelineCategory={focusedTimelineCategory}
+              onFocusedTimelineCategoryChange={setFocusedTimelineCategory}
+            />
           )}
         </div>
 
@@ -326,38 +254,6 @@ function OverviewPanel({
         )}
       </div>
     </section>
-  );
-}
-
-function ChartSkeleton() {
-  return (
-    <div className="chartSkeleton" role="status" aria-label="Statistiken laden">
-      <span className="chartSkeletonToggle" />
-      <span className="chartSkeletonPlot" />
-      <span className="chartSkeletonLegend" />
-    </div>
-  );
-}
-
-type ChartViewButtonProps = {
-  active: boolean;
-
-  onClick: () => void;
-
-  children: ReactNode;
-};
-
-function ChartViewButton({ active, onClick, children }: ChartViewButtonProps) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      className={`chartViewBtn${active ? " chartViewBtnActive" : ""}`}
-      onClick={onClick}
-    >
-      {children}
-    </button>
   );
 }
 

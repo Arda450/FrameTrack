@@ -27,7 +27,7 @@ const TRIGGER_GAP = 8;
 const RIGHT_EDGE_BIAS = 0.72;
 
 /**
- * Dezenter Info-Button mit Tooltip - für optionale Erklärungen statt langer Grautexte.
+ * Dezenter Info Button mit Tooltip für optionale Erklärungen.
  * Der Tooltip wird per Portal positioniert und bleibt im sichtbaren Bereich.
  */
 export function InfoHint({ label, children, className }: Props) {

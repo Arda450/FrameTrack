@@ -141,6 +141,7 @@ pub fn delete_project(state: State<TrackingState>, project_id: i64) -> Result<()
     Ok(())
 }
 
+/// Prüft Länge und Leerstring eines Projekt namens.
 fn validate_project_name(name: &str) -> Result<String, ApiError> {
     let trimmed = name.trim().to_string();
     if trimmed.is_empty() {
@@ -152,7 +153,7 @@ fn validate_project_name(name: &str) -> Result<String, ApiError> {
     if trimmed.len() > MAX_PROJECT_NAME_LEN {
         return Err(ApiError::new(
             "INVALID_PROJECT_NAME",
-            &format!("Projektname ist zu lang (max. {MAX_PROJECT_NAME_LEN} Zeichen)"),
+            format!("Projektname ist zu lang (max. {MAX_PROJECT_NAME_LEN} Zeichen)"),
         ));
     }
     Ok(trimmed)

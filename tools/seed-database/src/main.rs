@@ -14,6 +14,7 @@ use frametrack_db::{
     default_database_path, open_database, seed_demo_data, SeedOptions, SeedTimeMode,
 };
 
+/// Gibt Hilfe zur Kommandozeile auf stderr aus.
 fn print_usage() {
     eprintln!(
         r#"FrameTrack Demo-Datenbank befüllen (2s-Polling in Arbeitsblöcken)
@@ -22,7 +23,7 @@ Verwendung:
   cargo run -p seed-database -- [OPTIONEN]
 
 Optionen:
-  --days N        N Kalendertage (heute + vergangene Tage) — empfohlen für Tagesberichte
+  --days N        N Kalendertage (heute + vergangene Tage), empfohlen für Tagesberichte
   --hours N       Rollierendes Fenster in Stunden (Standard: 24, wenn --days fehlt)
   --no-clear      Bestehende Daten nicht löschen
   --output PATH   Zieldatei (Standard: Dokumente/frametrack-data/frametrack.db)
@@ -32,11 +33,12 @@ Beispiele:
   cargo run -p seed-database -- --hours 12
   cargo run -p seed-database -- --output testdata/frametrack-demo.db
 
-UI-Test: App beenden, Seed ausführen, App starten, Projekt „frametrack“ wählen.
+UI-Test: App beenden, Seed ausführen, App starten, Projekt „Mein Projekt“ wählen.
 "#
     );
 }
 
+/// Parst Kommandozeilenargumente in Zielpfad und Seed Optionen.
 fn parse_args() -> Result<(PathBuf, SeedOptions), String> {
     let args: Vec<String> = env::args().skip(1).collect();
     let mut output: Option<PathBuf> = None;
@@ -95,6 +97,7 @@ fn parse_args() -> Result<(PathBuf, SeedOptions), String> {
     Ok((path, opts))
 }
 
+/// CLI Einstiegspunkt für Demo Datenbank Seeds.
 fn main() {
     let (path, opts) = match parse_args() {
         Ok(v) => v,
@@ -148,6 +151,6 @@ fn main() {
     println!("Nächste Schritte für UI-Test:");
     println!("  1. FrameTrack-App vollständig beenden (auch tauri dev)");
     println!("  2. App neu starten: npm run tauri dev");
-    println!("  3. Tab „Projekte“ → „frametrack“ als aktiv setzen");
+    println!("  3. Tab „Projekte“ → „Mein Projekt“ als aktiv setzen");
     println!("  4. Übersicht → Tagesbericht / Pie / Zeitverlauf");
 }

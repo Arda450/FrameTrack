@@ -2,15 +2,15 @@
 
 use serde::Serialize;
 
-/// Metadaten zum Export-Lauf (Versionierung, Zeitpunkt, Umfang).
+/// Metadaten zum Export-Lauf (Zeitpunkt, Umfang, Filter).
 #[derive(Serialize)]
 pub struct ExportMeta {
-    pub format_version: u32,
     pub exported_at_unix: u64,
     pub sample_count: usize,
     pub aggregated_count: usize,
     pub timezone: String,
     pub filter_project_id: Option<i64>,
+    pub filter_project_ids: Option<Vec<i64>>,
     pub filter_from_ts: Option<u64>,
     pub filter_to_ts: Option<u64>,
     pub filter_context_query: Option<String>,
@@ -21,7 +21,7 @@ pub struct ExportMeta {
 pub struct ExportActivity {
     pub title: String,
     pub context_label: String,
-    /// Tätigkeitsklasse (Entwicklung, Kommunikation, Recherche, Organisation, Unterhaltung, …).
+    /// Tätigkeitsklasse (Entwicklung, Kommunikation, Recherche, Organisation, Unterhaltung, usw.).
     pub activity_type: String,
     pub timestamp: u64,
     pub project_id: Option<i64>,

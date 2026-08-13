@@ -19,11 +19,7 @@ type Props = {
 const VIEWPORT_MARGIN = 8;
 const POINTER_OFFSET = 12;
 
-/**
- * Rendert den Zeitverlauf-Tooltip per Portal mit `position: fixed`,
- * damit er nicht von overflow-Containern abgeschnitten wird und
- * bei Bedarf innerhalb des Viewports umklappt.
- */
+/** Rendert den Zeitverlauf Tooltip per Portal mit fester Position. */
 export function TimeSeriesTooltipPortal({
   active,
   payload,
@@ -33,12 +29,18 @@ export function TimeSeriesTooltipPortal({
   bucketSeconds,
 }: Props) {
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<{ left: number; top: number } | null>(
-    null,
-  );
+  const [position, setPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
 
   useLayoutEffect(() => {
-    if (!active || !coordinate || !chartRootRef.current || !tooltipRef.current) {
+    if (
+      !active ||
+      !coordinate ||
+      !chartRootRef.current ||
+      !tooltipRef.current
+    ) {
       setPosition(null);
       return;
     }

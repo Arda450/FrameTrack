@@ -35,6 +35,7 @@ pub struct MinuteAccumulator {
 }
 
 impl MinuteAccumulator {
+    /// Startet einen leeren Minuten Bucket ab dem gegebenen Zeitstempel.
     pub fn new(timestamp: u64) -> Self {
         Self {
             bucket_start: minute_bucket_start(timestamp),
@@ -45,10 +46,12 @@ impl MinuteAccumulator {
         }
     }
 
+    /// Liefert den Startzeitpunkt des aktuellen Minuten Buckets.
     pub fn bucket_start(&self) -> u64 {
         self.bucket_start
     }
 
+    /// Zählt ein Sample für die gegebene Aktivität in der laufenden Minute.
     pub fn record(&mut self, key: MinuteActivityKey, timestamp: u64) {
         self.first_sample_ts.get_or_insert(timestamp);
         self.total_samples = self.total_samples.saturating_add(1);
@@ -58,6 +61,7 @@ impl MinuteAccumulator {
         entry.1 = self.sequence;
     }
 
+    /// Setzt den Akkumulator für einen neuen Minuten Bucket zurück.
     pub fn reset(&mut self, timestamp: u64) {
         self.bucket_start = minute_bucket_start(timestamp);
         self.first_sample_ts = None;
@@ -89,6 +93,7 @@ impl MinuteAccumulator {
     }
 }
 
+/// Berechnet den Bucket Start für einen Unix Zeitstempel.
 pub fn minute_bucket_start(timestamp: u64) -> u64 {
     (timestamp / AGGREGATION_INTERVAL_SECONDS) * AGGREGATION_INTERVAL_SECONDS
 }
@@ -97,6 +102,7 @@ pub fn minute_bucket_start(timestamp: u64) -> u64 {
 mod tests {
     use super::*;
 
+    /// Erzeugt einen Test Sample Schlüssel für Minutenaggregation.
     fn sample_key(title: &str) -> MinuteActivityKey {
         MinuteActivityKey {
             project_id: 1,
@@ -107,12 +113,14 @@ mod tests {
         }
     }
 
+    /// Prüft leeren Bucket ohne dominante Aktivität.
     #[test]
     fn empty_bucket_has_no_dominant_activity() {
         let accumulator = MinuteAccumulator::new(1_700_000_000);
         assert!(accumulator.dominant_minute().is_none());
     }
 
+    /// Prüft 60 Sekunden Dauer bei 30 Samples à 2 Sekunden.
     #[test]
     fn thirty_samples_yield_sixty_second_duration() {
         let mut accumulator = MinuteAccumulator::new(1_700_000_000);
@@ -128,6 +136,7 @@ mod tests {
         assert_eq!(dominant.timestamp, 1_700_000_000);
     }
 
+    /// Prüft, dass der häufigste Titel innerhalb einer Minute gewinnt.
     #[test]
     fn most_frequent_title_wins_within_a_minute() {
         let mut accumulator = MinuteAccumulator::new(1_700_000_000);
@@ -146,6 +155,7 @@ mod tests {
         assert_eq!(dominant.duration_seconds, 60);
     }
 
+    /// Prüft Tie Break zugunsten des jüngsten Samples.
     #[test]
     fn tie_breaker_prefers_most_recent_sample() {
         let mut accumulator = MinuteAccumulator::new(1_700_000_000);
@@ -159,6 +169,7 @@ mod tests {
         assert_eq!(dominant.key.title, "Second window");
     }
 
+    /// Prüft, dass Reset den vorherigen Bucket leert.
     #[test]
     fn reset_clears_previous_bucket() {
         let mut accumulator = MinuteAccumulator::new(1_700_000_000);

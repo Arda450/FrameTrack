@@ -14,6 +14,3 @@ export const ACTIVE_TIME_MEASUREMENT_HINT =
 /** Länger: für Berichtskopf, PDF-Fusszeile und Untertitel. */
 export const ACTIVE_TIME_MEASUREMENT_HINT_LONG =
   "Aktive Zeit aus 2-Sekunden-Messungen, pro Minute zusammengefasst (überwiegende App).";
-
-/** @deprecated Alias – bitte ACTIVE_TIME_MEASUREMENT_HINT_LONG verwenden. */
-export const REPORT_ESTIMATION_HINT = ACTIVE_TIME_MEASUREMENT_HINT_LONG;

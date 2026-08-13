@@ -7,6 +7,7 @@ type UseReportLoadOptions<T> = {
   loadErrorMessage: string;
 };
 
+/** Lädt Berichtsdaten mit Hintergrund Refresh. */
 export function useReportLoad<T>({
   queryKey,
   load,

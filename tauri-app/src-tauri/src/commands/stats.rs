@@ -22,6 +22,16 @@ use frametrack_db::{
 };
 use frametrack_tracking::TrackingState;
 
+/// Liefert den Unix Zeitstempel für heute 00:00 Uhr in lokaler Zeit.
+fn local_today_start_ts(fallback: u64) -> u64 {
+    Local::now()
+        .date_naive()
+        .and_hms_opt(0, 0, 0)
+        .and_then(|value| Local.from_local_datetime(&value).single())
+        .map(|value| value.timestamp().max(0) as u64)
+        .unwrap_or(fallback)
+}
+
 /// Mappt eine DB-Zeile auf das transportfähige `ActivityDto` für die UI.
 fn row_to_dto(row: frametrack_db::ActivityWithProject) -> ActivityDto {
     ActivityDto::from_parts(row.title, row.timestamp, row.project_id, row.project_name)
@@ -38,12 +48,7 @@ pub fn get_overview_stats(state: State<TrackingState>) -> Result<OverviewStatsDt
 
     let to_ts = frametrack_tracking::current_timestamp();
     let from_ts = to_ts.saturating_sub(RANGE_SECONDS);
-    let today_start_ts = Local::now()
-        .date_naive()
-        .and_hms_opt(0, 0, 0)
-        .and_then(|value| Local.from_local_datetime(&value).single())
-        .map(|value| value.timestamp().max(0) as u64)
-        .unwrap_or(from_ts);
+    let today_start_ts = local_today_start_ts(from_ts);
     let db_conn = state
         .db
         .lock()
@@ -127,12 +132,7 @@ pub fn get_project_stats(
 
     let to_ts = frametrack_tracking::current_timestamp();
     let recent_from_ts = to_ts.saturating_sub(RECENT_SECONDS);
-    let today_start_ts = Local::now()
-        .date_naive()
-        .and_hms_opt(0, 0, 0)
-        .and_then(|value| Local.from_local_datetime(&value).single())
-        .map(|value| value.timestamp().max(0) as u64)
-        .unwrap_or(recent_from_ts);
+    let today_start_ts = local_today_start_ts(recent_from_ts);
 
     let db_conn = state
         .db
@@ -203,6 +203,9 @@ pub fn get_dwell_by_category(
 }
 
 /// Liefert eine Seite Aktivitäten, serverseitig gefiltert, sortiert und paginiert.
+///
+/// Die flachen Parameter bilden bewusst den bestehenden IPC Vertrag ab.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub fn get_activities_page(
     state: State<TrackingState>,

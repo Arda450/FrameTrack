@@ -1,7 +1,29 @@
-# Tauri + React + Typescript
+# FrameTrack Desktop Anwendung
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+Dieser Ordner enthält das React Frontend und die Tauri Anwendung von FrameTrack.
 
-## Recommended IDE Setup
+## Entwicklung
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+Die Befehle werden in diesem Ordner ausgeführt:
+
+```bash
+npm install
+npm run tauri dev
+```
+
+## Qualitätsprüfungen
+
+```bash
+npm run check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace
+```
+
+## Demo Daten
+
+```bash
+npm run seed-db -- --days 7
+```
+
+Die produktive Datenbank liegt unter Windows in
+`%USERPROFILE%\Documents\frametrack-data\frametrack.db`.

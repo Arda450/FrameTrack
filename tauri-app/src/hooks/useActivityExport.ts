@@ -1,40 +1,29 @@
-import { exportActivitiesCsvToPaths } from "../api/export";
 import { useState } from "react";
 import type { TableExportFilter } from "../types";
 import { useToast } from "../components/toast/ToastContext";
 import { apiErrorMessage } from "../utils/apiError";
 import {
-  aggregatedCsvPathBeside,
-  defaultExportFileName,
-  pickExportSavePath,
-} from "../utils/exportSaveDialog";
-import { formatExportSuccessDetail } from "../utils/exportPath";
-import { fileNameFromPath } from "../utils/fileNameFromPath";
+  formatExportSuccessDetail,
+  fileNameFromPath,
+} from "../utils/exportPath";
+import {
+  pickActivitiesCsvExportPaths,
+  writeActivitiesCsvExport,
+} from "../utils/exportActivitiesCsv";
 
+/** Stellt CSV Export für die Aktivitätstabelle bereit. */
 export function useActivityExport(filter: TableExportFilter) {
   const toast = useToast();
   const [activeExport, setActiveExport] = useState<"csv-download" | null>(null);
 
+  /** Startet den CSV Export mit aktuellem Tabellenfilter. */
   async function exportCsv() {
     try {
-      const samplesPath = await pickExportSavePath({
-        title: "CSV Zeiteinträge speichern",
-        defaultFileName: defaultExportFileName("frametrack-samples", "csv"),
-        extension: "csv",
-        filterName: "CSV",
-      });
-      if (!samplesPath) return;
+      const paths = await pickActivitiesCsvExportPaths();
+      if (!paths) return;
 
       setActiveExport("csv-download");
-      const aggregatedPath = aggregatedCsvPathBeside(samplesPath);
-      const result = await exportActivitiesCsvToPaths({
-        projectId: filter.projectId,
-        fromTs: filter.fromTs,
-        toTs: filter.toTs,
-        contextQuery: filter.contextQuery,
-        samplesPath,
-        aggregatedPath,
-      });
+      const result = await writeActivitiesCsvExport(filter, paths);
       toast.success("CSV exportiert", {
         detail: formatExportSuccessDetail(result.samples_path, [
           fileNameFromPath(result.aggregated_path),

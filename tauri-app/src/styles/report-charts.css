@@ -1,0 +1,105 @@
+/**
+ * Zuständig für Projektdiagramme und Diagrammbereiche der Berichte.
+ */
+
+.periodReportProjects {
+  margin-top: 4px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.periodReportBarChart {
+  margin-top: 4px;
+  width: 100%;
+}
+
+.periodReportProjects .projectBarChartPlot {
+  width: 100%;
+}
+
+.periodReportChartPaneProjects {
+  min-height: 0;
+  width: 100%;
+}
+
+/* Beide Pie-Charts nebeneinander; bei wenig Platz untereinander */
+.periodReportPieRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.periodReportPieBlock {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.periodReportChartBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow: visible;
+}
+
+.periodReportChartBlock > .chartLegendCompact {
+  margin-top: 4px;
+}
+
+.periodReportChartTitle {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.periodReportChartHint {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.periodReportChartPane {
+  min-height: 220px;
+}
+
+.periodReportChartPane.periodReportChartPaneProjects {
+  min-height: 0;
+}
+
+.periodReportPdfCapture {
+  width: 100%;
+  height: 100%;
+}
+
+.periodReportChartPaneSmall {
+  min-height: 180px;
+  max-width: 280px;
+}
+
+/* Pie-Charts für die Nebeneinander-Anordnung */
+.periodReportChartPanePie {
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.periodReportChartPanePie .pieChartPlot {
+  height: 300px;
+  min-height: 300px;
+  max-width: 400px;
+}
+
+/* Legenden in Berichten nutzen .chartLegendCompact (siehe chart-legend.css) */
+
+.periodReportChartPaneTimeline {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+  overflow: visible;
+}

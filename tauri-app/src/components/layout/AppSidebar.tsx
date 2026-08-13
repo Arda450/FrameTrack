@@ -17,7 +17,7 @@ import {
   toastProjectsDeletedDetail,
 } from "../../utils/toastProjectMessages";
 import { ProjectList } from "./ProjectList";
-import { buildDeleteProjectDescription } from "./deleteProjectDialogDescription";
+import { buildDeleteProjectDescription } from "./DeleteProjectDialogDescription";
 
 type AppSidebarProps = {
   theme: "dark" | "light";
@@ -35,6 +35,7 @@ type AppSidebarProps = {
   onStopTracking: () => Promise<void> | void;
 };
 
+/** Seitenleiste mit Projektliste, Tracking und Einstellungen. */
 export function AppSidebar({
   theme,
   overviewOpen,

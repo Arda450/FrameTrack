@@ -9,6 +9,7 @@
 @import "./styles/scrollbars.css";
 @import "./styles/buttons.css";
 @import "./styles/date-input.css";
+@import "./styles/period-date-picker.css";
 @import "./styles/layout.css";
 @import "./styles/app-shell.css";
 @import "./styles/app-sidebar.css";
@@ -16,8 +17,14 @@
 @import "./styles/overview.css";
 @import "./styles/settings.css";
 @import "./styles/activities-table.css";
-@import "./styles/charts.css";
-@import "./styles/report.css";
+@import "./styles/chart-overview.css";
+@import "./styles/chart-plots.css";
+@import "./styles/chart-legend.css";
+@import "./styles/chart-tooltip-controls.css";
+@import "./styles/report-navigation.css";
+@import "./styles/report-summary.css";
+@import "./styles/report-charts.css";
+@import "./styles/report-actions.css";
 @import "./styles/dialog.css";
 @import "./styles/info-hint.css";
 @import "./styles/toast.css";

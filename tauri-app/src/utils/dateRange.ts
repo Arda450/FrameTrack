@@ -30,6 +30,7 @@ export function addDaysIso(isoDate: string, delta: number): string {
   return `${ny}-${nm}-${nd}`;
 }
 
+/** Formatiert ein ISO Datum als TT.MM.JJJJ. */
 export function formatIsoDate(iso: string): string {
   const [y, m, d] = iso.split("-");
   return `${d}.${m}.${y}`;
@@ -43,6 +44,7 @@ export function formatIsoDateLong(iso: string): string {
   return `${weekday}, ${formatIsoDate(iso)}`;
 }
 
+/** Formatiert Unix Sekunden als lokale Uhrzeit. */
 export function formatTimeFromTs(ts: number): string {
   return new Date(ts * 1000).toLocaleTimeString(undefined, {
     hour: "2-digit",
@@ -50,10 +52,12 @@ export function formatTimeFromTs(ts: number): string {
   });
 }
 
+/** Formatiert Unix Sekunden als lokales Datum. */
 export function formatTimestampDate(ts: number): string {
   return new Date(ts * 1000).toLocaleDateString("de-CH");
 }
 
+/** Formatiert Unix Sekunden als Datum und Uhrzeit. */
 export function formatTimestampDateTime(ts: number): string {
   return new Date(ts * 1000).toLocaleString("de-CH", {
     day: "2-digit",
@@ -70,6 +74,7 @@ export function clampIsoDateToToday(isoDate: string): string {
   return isoDate > today ? today : isoDate;
 }
 
+/** Prüft ob ein ISO Datum vor heute liegt. */
 export function isIsoDateBeforeToday(isoDate: string): boolean {
   return isoDate < todayIsoDate();
 }
@@ -92,6 +97,7 @@ export function weekEndIso(isoDate: string): string {
   return addDaysIso(weekStartIso(isoDate), 6);
 }
 
+/** Verschiebt ein ISO Datum um Wochen. */
 export function addWeeks(isoDate: string, delta: number): string {
   return addDaysIso(isoDate, delta * 7);
 }
@@ -109,15 +115,12 @@ export function isoWeekNumber(isoDate: string): number {
   );
 }
 
-export function clampWeekEndToToday(weekEnd: string): string {
-  const today = todayIsoDate();
-  return weekEnd > today ? today : weekEnd;
-}
-
-export function formatWeekRange(weekStart: string, weekEnd: string): string {
+/** Formatiert einen Wochen Datumsbereich kompakt. */
+function formatWeekRange(weekStart: string, weekEnd: string): string {
   return `${formatIsoDate(weekStart)} - ${formatIsoDate(weekEnd)}`;
 }
 
+/** Formatiert Kalenderwoche und Datumsbereich für die Navigation. */
 export function formatWeekLabel(anchorIso: string): string {
   const start = weekStartIso(anchorIso);
   const end = weekEndIso(anchorIso);
@@ -125,10 +128,7 @@ export function formatWeekLabel(anchorIso: string): string {
   return `KW ${isoWeekNumber(start)} · ${formatWeekRange(start, end)}`;
 }
 
+/** Prüft ob der Anker in der laufenden Kalenderwoche liegt. */
 export function isCurrentWeek(anchorIso: string): boolean {
   return weekStartIso(anchorIso) === weekStartIso(todayIsoDate());
-}
-
-export function isWeekFullyInPast(anchorIso: string): boolean {
-  return weekEndIso(anchorIso) < todayIsoDate();
 }

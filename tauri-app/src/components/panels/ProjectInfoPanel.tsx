@@ -24,6 +24,7 @@ type DetailSection = {
   rows: DetailRow[];
 };
 
+/** Gruppiert Detailzeilen für das Projekt Informationspanel. */
 function buildDetailSections(stats: ProjectStats): DetailSection[] {
   return [
     {
@@ -63,6 +64,7 @@ function buildDetailSections(stats: ProjectStats): DetailSection[] {
   ];
 }
 
+/** Erstellt KPI Kartenwerte aus Projektstatistiken. */
 function buildKpiItems(stats: ProjectStats) {
   return [
     {
@@ -80,6 +82,7 @@ function buildKpiItems(stats: ProjectStats) {
   ];
 }
 
+/** Zeigt Projekt KPIs und Metadaten im Übersichtspanel. */
 export function ProjectInfoPanel({
   stats,
   isTracking,
@@ -88,7 +91,10 @@ export function ProjectInfoPanel({
 }: ProjectInfoPanelProps) {
   if (error) {
     return (
-      <aside className="projectInfoPanel projectInfoPanelError" aria-label="Projektinformationen">
+      <aside
+        className="projectInfoPanel projectInfoPanelError"
+        aria-label="Projektinformationen"
+      >
         <p className="overviewLoadError">{error}</p>
       </aside>
     );

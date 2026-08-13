@@ -1,6 +1,9 @@
+//! Projekt Persistenz in SQLite.
+
 use crate::DbError;
 use rusqlite::{params, Connection, OptionalExtension};
 
+/// Ein gespeichertes Projekt mit internem Pfad Schlüssel.
 #[derive(Debug, Clone)]
 pub struct DbProject {
     pub id: i64,
@@ -8,8 +11,7 @@ pub struct DbProject {
     pub path: String,
 }
 
-// schreibt ein projekt in die datenbank oder aktualisiert es wenn es bereits existiert
-// hier wird am ende ein projekt zurückgegeben, Rückgabetyp ist ein objekt
+/// Schreibt ein Projekt oder aktualisiert den Namen bei gleichem Pfad.
 pub fn upsert_project(
     conn: &Connection,
     name: &str,
@@ -23,7 +25,7 @@ pub fn upsert_project(
         params![name, path, now_ts as i64],
     )?;
 
-    let mut stmt = conn.prepare("SELECT id, name, path FROM projects WHERE path = ?1")?; // sucht nach einem projekt mit dem gegebenen path
+    let mut stmt = conn.prepare("SELECT id, name, path FROM projects WHERE path = ?1")?;
     let p = stmt.query_row([path], |row| {
         Ok(DbProject {
             id: row.get(0)?,
@@ -57,8 +59,7 @@ pub fn create_project(conn: &Connection, name: &str, now_ts: u64) -> Result<DbPr
     })
 }
 
-// listet alle projekte in der datenbank und gibt sie als vector von dbprojects zurück
-// Rückgabetyp ist ein vector von dbprojects
+/// Listet alle Projekte alphabetisch nach Name.
 pub fn list_projects(conn: &Connection) -> Result<Vec<DbProject>, DbError> {
     let mut stmt = conn.prepare("SELECT id, name, path FROM projects ORDER BY name ASC")?;
     let rows = stmt.query_map([], |row| {
@@ -113,6 +114,7 @@ pub fn count_projects(conn: &Connection) -> Result<i64, DbError> {
     Ok(count)
 }
 
+/// Lädt ein Projekt anhand der ID oder None wenn nicht vorhanden.
 pub fn get_project_by_id(conn: &Connection, project_id: i64) -> Result<Option<DbProject>, DbError> {
     let mut stmt = conn.prepare("SELECT id, name, path FROM projects WHERE id = ?1")?;
     let project = stmt

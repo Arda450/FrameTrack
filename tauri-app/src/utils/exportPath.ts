@@ -12,12 +12,14 @@ export function dirFromPath(path: string): string {
   return parts.slice(0, -1).join(sep);
 }
 
+/** Fügt Ordner und Dateiname zu einem Pfad zusammen. */
 export function joinPath(dir: string, fileName: string): string {
   const trimmed = dir.replace(/[/\\]+$/, "");
   const sep = trimmed.includes("\\") ? "\\" : "/";
   return `${trimmed}${sep}${fileName}`;
 }
 
+/** Erstellt den Toast Detailtext nach einem Export. */
 export function formatExportSuccessDetail(
   filePath: string,
   extraFileNames: string[] = [],

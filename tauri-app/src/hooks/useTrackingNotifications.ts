@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS: TrackingNotificationSettings = {
 };
 const MINIMUM_SUMMARY_DURATION_MS = 15 * 60 * 1000;
 
+/** Liest gespeicherte Benachrichtigungseinstellungen aus dem Local Storage. */
 function readSettings(): TrackingNotificationSettings {
   try {
     const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}");
@@ -41,20 +42,24 @@ function readSettings(): TrackingNotificationSettings {
   }
 }
 
+/** Liest den Startzeitpunkt der aktuellen Tracking Sitzung. */
 function readSessionStartedAt(): number | null {
   const stored = Number(localStorage.getItem(SESSION_STARTED_AT_KEY));
   return Number.isFinite(stored) && stored > 0 ? stored : null;
 }
 
+/** Fordert bei Bedarf die System Benachrichtigungsberechtigung an. */
 async function ensurePermission(): Promise<boolean> {
   if (await isPermissionGranted()) return true;
   return (await requestPermission()) === "granted";
 }
 
+/** Sendet eine native Desktop Benachrichtigung. */
 function showNotification(title: string, body: string) {
   sendNotification({ title, body });
 }
 
+/** Steuert periodische Tracking Erinnerungen und Sitzungszusammenfassungen. */
 export function useTrackingNotifications(
   isTracking: boolean,
   projectName: string | null,
@@ -156,26 +161,11 @@ export function useTrackingNotifications(
     }
   }, [projectName, settings.enabled]);
 
-  const sendTestNotification = useCallback(async () => {
-    try {
-      if (!(await ensurePermission())) return false;
-      showNotification(
-        "FrameTrack-Benachrichtigung",
-        "Tracking-Erinnerungen werden als Windows-Benachrichtigung angezeigt.",
-      );
-      return true;
-    } catch (error) {
-      console.error("test notification failed", error);
-      return false;
-    }
-  }, []);
-
   return {
     settings,
     setEnabled,
     setIntervalMinutes,
     beginSession,
     finishSession,
-    sendTestNotification,
   };
 }

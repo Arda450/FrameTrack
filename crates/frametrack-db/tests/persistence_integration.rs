@@ -1,15 +1,19 @@
+//! Integrations Tests für Persistenz und Abfragen.
+
 use frametrack_core::{models::WindowActivity, ActivityType};
 use frametrack_db::{
-    count_activities, create_project, delete_project, get_activities_filtered,
-    get_activities_page, get_activity_overview_summary, get_project_stats_summary,
+    count_activities, create_project, delete_project, get_activities_filtered, get_activities_page,
+    get_activity_overview_summary, get_project_stats_summary,
     insert_aggregated_activity_with_project, ActivitiesFilter,
 };
 use rusqlite::Connection;
 
+/// Öffnet eine leere In Memory Datenbank mit Schema.
 fn open_test_db() -> Connection {
     frametrack_db::init_in_memory_database().expect("in-memory database")
 }
 
+/// Erzeugt eine Testaktivität mit Entwicklungsmetadaten.
 fn sample_activity(title: &str, timestamp: u64) -> WindowActivity {
     WindowActivity {
         title: title.to_string(),
@@ -19,6 +23,7 @@ fn sample_activity(title: &str, timestamp: u64) -> WindowActivity {
     }
 }
 
+/// Prüft Filterung nach Projekt ID.
 #[test]
 fn insert_and_filter_activities_by_project() {
     let conn = open_test_db();
@@ -57,6 +62,7 @@ fn insert_and_filter_activities_by_project() {
     assert_eq!(filtered[0].project_name.as_deref(), Some("Major Project"));
 }
 
+/// Prüft Kontextfilter in paginierten Abfragen.
 #[test]
 fn paginated_query_respects_context_filter() {
     let conn = open_test_db();
@@ -97,6 +103,7 @@ fn paginated_query_respects_context_filter() {
     assert!(page.items[0].title.contains("Outlook"));
 }
 
+/// Prüft Summierung der Dauer in der Übersichtsstatistik.
 #[test]
 fn overview_summary_aggregates_duration_seconds() {
     let conn = open_test_db();
@@ -122,6 +129,7 @@ fn overview_summary_aggregates_duration_seconds() {
     assert_eq!(summary.total_active_seconds, 90);
 }
 
+/// Prüft Kaskadenlöschung von Projekt und Aktivitäten.
 #[test]
 fn delete_project_removes_its_activities() {
     let conn = open_test_db();
@@ -143,6 +151,7 @@ fn delete_project_removes_its_activities() {
         .is_none());
 }
 
+/// Prüft, dass unbekannte Projekt IDs beim Insert ignoriert werden.
 #[test]
 fn insert_skips_unknown_project_id() {
     let conn = open_test_db();

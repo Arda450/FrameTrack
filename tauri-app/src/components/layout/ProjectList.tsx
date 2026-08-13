@@ -24,6 +24,7 @@ type ProjectListProps = {
   onCreateProject: () => void;
 };
 
+/** Liste der Projekte mit Auswahl, Bearbeitung und Tracking Aktionen. */
 export function ProjectList({
   projects,
   activeProject,

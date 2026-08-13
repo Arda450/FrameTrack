@@ -1,7 +1,8 @@
-// eigene fehlertypen für Tracking-Probleme
+//! Fehlertypen für Fenstererfassung und interne Locks.
 
 use std::fmt::{Display, Formatter};
 
+/// Fehler beim Lesen des aktiven Fensters oder bei Lock Problemen.
 #[derive(Debug)]
 pub enum TrackingError {
     WindowNotFound,
@@ -9,8 +10,8 @@ pub enum TrackingError {
     LockPoisoned(&'static str),
 }
 
-// display macht den error menschenlesbar
 impl Display for TrackingError {
+    // Formatiert den Fehler für Log und Anzeige.
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             TrackingError::WindowNotFound => write!(f, "Kein aktives Fenster gefunden"),

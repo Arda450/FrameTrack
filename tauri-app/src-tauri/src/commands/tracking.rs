@@ -17,6 +17,7 @@ use frametrack_tracking::{
     SAMPLE_INTERVAL_SECONDS,
 };
 
+/// Schreibt die dominante Minute in die DB und sendet ein UI Event.
 fn persist_dominant_minute(
     accumulator: &MinuteAccumulator,
     db: &Arc<Mutex<rusqlite::Connection>>,
@@ -79,9 +80,7 @@ pub fn start_tracking(state: State<TrackingState>, app: AppHandle) {
             if !exists {
                 *active = None;
                 state.is_running.store(false, Ordering::SeqCst);
-                eprintln!(
-                    "Tracking nicht gestartet: Projekt #{project_id} existiert nicht mehr."
-                );
+                eprintln!("Tracking nicht gestartet: Projekt #{project_id} existiert nicht mehr.");
                 return;
             }
         }
@@ -122,9 +121,7 @@ pub fn start_tracking(state: State<TrackingState>, app: AppHandle) {
 
             if !title.is_empty() {
                 let analysis = match &last_classification {
-                    Some((last_title, activity_type, context_key))
-                        if last_title == &title =>
-                    {
+                    Some((last_title, activity_type, context_key)) if last_title == &title => {
                         WindowAnalysis {
                             activity_type: *activity_type,
                             category_key: context_key.clone(),

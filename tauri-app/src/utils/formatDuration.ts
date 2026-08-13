@@ -1,3 +1,4 @@
+/** Formatiert Sekunden als lesbare Dauer. */
 export function formatDurationSeconds(seconds: number): string {
   if (seconds < 60) return `${Math.round(seconds)} s`;
   const minutes = Math.floor(seconds / 60);
